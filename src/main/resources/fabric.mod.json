@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "civilization",
-  "version": "${version}",
+  "version": "0.0.1",
 
   "name": "Civilization",
   "description": "Thriving cities!",
