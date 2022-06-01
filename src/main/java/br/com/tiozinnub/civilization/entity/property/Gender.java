@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.entity.property;
 
-import br.com.tiozinnub.civilization.util.helper.RandomHelper;
+import br.com.tiozinnub.civilization.utils.helper.RandomHelper;
 import net.minecraft.util.StringIdentifiable;
 
 import java.util.Locale;

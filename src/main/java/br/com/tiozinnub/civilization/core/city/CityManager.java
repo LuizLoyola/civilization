@@ -1,15 +1,62 @@
 package br.com.tiozinnub.civilization.core.city;
 
+import com.google.common.collect.Maps;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.PersistentState;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
 
-public class CityManager {
-    private final List<City> cities;
+import static br.com.tiozinnub.civilization.utils.helper.NbtHelper.get;
+import static br.com.tiozinnub.civilization.utils.helper.NbtHelper.put;
+
+public class CityManager extends PersistentState {
+    private final Map<UUID, City> cities = Maps.newHashMap();
+    private final ServerWorld world;
+    private int currentTime;
 
     public CityManager(ServerWorld world) {
+        this.world = world;
+        this.markDirty();
+    }
 
-        this.cities = new ArrayList<>();
+    public City getCity(UUID uuid) {
+        return this.cities.get(uuid);
+    }
+
+    public void tick() {
+        ++this.currentTime;
+
+        for (Iterator<City> iterator = this.cities.values().iterator(); iterator.hasNext(); ) {
+            City city = iterator.next();
+
+            if (city.shouldDelete()) {
+                iterator.remove();
+            } else {
+                city.tick();
+            }
+        }
+
+        this.markDirty();
+    }
+
+    public static CityManager fromNbt(ServerWorld world, NbtCompound nbt) {
+        CityManager cityManager = new CityManager(world);
+        cityManager.currentTime = get(nbt, "currentTime");
+        get(nbt, "cities", UUID::fromString, (c) -> new City(world, c), cityManager.cities);
+        return cityManager;
+    }
+
+    public static String nameFor() {
+        return "cityManager";
+    }
+
+    @Override
+    public NbtCompound writeNbt(NbtCompound nbt) {
+        put(nbt, "currentTime", this.currentTime);
+        put(nbt, "cities", this.cities);
+        return nbt;
     }
 }

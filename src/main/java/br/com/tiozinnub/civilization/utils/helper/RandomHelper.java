@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.util.helper;
+package br.com.tiozinnub.civilization.utils.helper;
 
 import java.util.Random;
 
