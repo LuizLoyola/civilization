@@ -4,7 +4,8 @@
   "package": "br.com.tiozinnub.civilization.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "ExampleMixin"
+    "ExampleMixin",
+    "ServerWorldMixin"
   ],
   "client": [
     "ExampleMixin"
