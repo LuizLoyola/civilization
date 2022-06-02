@@ -4,6 +4,7 @@ public enum SerializableType {
     INTEGER,
     STRING,
     BLOCK_POS,
+    MAP_POS,
     DIRECTION,
     UUID,
     BYTE,

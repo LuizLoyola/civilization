@@ -44,6 +44,8 @@ public abstract class Serializable {
                 case STRING -> Optional.ofNullable((String) getter.get()).ifPresent(value -> nbt.putString(key, value));
                 case BLOCK_POS ->
                         Optional.ofNullable((BlockPos) getter.get()).ifPresent(value -> nbt.putLong(key, value.asLong()));
+                case MAP_POS ->
+                        Optional.ofNullable((MapPos) getter.get()).ifPresent(value -> nbt.putLong(key, value.asLong()));
                 case DIRECTION ->
                         Optional.ofNullable((Direction) getter.get()).ifPresent(value -> nbt.putString(key, value.getName()));
                 case UUID ->
@@ -88,6 +90,8 @@ public abstract class Serializable {
                             ((Consumer<String>) setter).accept(containsKey ? nbt.getString(key) : (String) this.defaultValues.get(key));
                     case BLOCK_POS ->
                             ((Consumer<BlockPos>) setter).accept(containsKey ? BlockPos.fromLong(nbt.getLong(key)) : (BlockPos) this.defaultValues.get(key));
+                    case MAP_POS ->
+                            ((Consumer<MapPos>) setter).accept(containsKey ? MapPos.fromLong(nbt.getLong(key)) : (MapPos) this.defaultValues.get(key));
                     case DIRECTION ->
                             ((Consumer<Direction>) setter).accept(containsKey ? Direction.byName(nbt.getString(key)) : (Direction) this.defaultValues.get(key));
                     case UUID ->
@@ -95,13 +99,21 @@ public abstract class Serializable {
                     case BYTE ->
                             ((Consumer<Byte>) setter).accept(containsKey ? nbt.getByte(key) : (Byte) this.defaultValues.get(key));
                     case LIST -> {
-                        nbt.getList(key, 10).stream().map(NbtCompound.class::cast).forEach(n -> ((Consumer<Serializable>) setter).accept(this.valueConstructors.get(key).get().fromNbt(n)));
+                        var getter = this.getters.get(key);
+                        var list = (List<Serializable>) getter.get();
+                        nbt.getList(key, 10).stream().map(NbtCompound.class::cast).forEach(n -> list.add(this.valueConstructors.get(key).get().fromNbt(n)));
                     }
                 }
             }
         }
 
+        this.afterDeserialized();
+
         return this;
+    }
+
+    public void afterDeserialized() {
+        // NO-OP
     }
 
     protected class SerializableHelper {
@@ -110,6 +122,10 @@ public abstract class Serializable {
 
         public void registerProperty(String key, Supplier<BlockPos> getter, Consumer<BlockPos> setter, BlockPos defaultValue) {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BLOCK_POS);
+        }
+
+        public void registerProperty(String key, Supplier<MapPos> getter, Consumer<MapPos> setter, MapPos defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.MAP_POS);
         }
 
         public void registerProperty(String key, Supplier<Integer> getter, Consumer<Integer> setter, Integer defaultValue) {
@@ -132,8 +148,8 @@ public abstract class Serializable {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BYTE);
         }
 
-        public <V extends Serializable> void registerProperty(String key, Supplier<List<V>> getter, Consumer<Serializable> setter, Supplier<V> valueConstructor) {
-            this.registerProperty(key, getter, setter, new ArrayList<V>(), SerializableType.LIST);
+        public <V extends Serializable> void registerProperty(String key, Supplier<List<V>> getter, Supplier<V> valueConstructor) {
+            this.registerProperty(key, getter, null, new ArrayList<V>(), SerializableType.LIST);
             valueConstructors.put(key, valueConstructor);
         }
 

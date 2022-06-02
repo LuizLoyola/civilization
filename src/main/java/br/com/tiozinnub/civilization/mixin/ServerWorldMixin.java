@@ -1,6 +1,7 @@
 package br.com.tiozinnub.civilization.mixin;
 
 import br.com.tiozinnub.civilization.core.city.CityManager;
+import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;
 import net.minecraft.server.world.ServerWorld;
@@ -18,8 +19,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 @Mixin(ServerWorld.class)
-public class ServerWorldMixin {
-    private CityManager cityManager;
+public class ServerWorldMixin implements IServerWorldExt {
+    protected CityManager cityManager;
 
     @SuppressWarnings({"rawtypes"})
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -34,7 +35,8 @@ public class ServerWorldMixin {
         this.getCityManager().tick();
     }
 
+    @Override
     public CityManager getCityManager() {
-        return cityManager;
+        return this.cityManager;
     }
 }

@@ -3,9 +3,11 @@ package br.com.tiozinnub.civilization.core.city;
 import com.google.common.collect.Maps;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.PersistentState;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -58,5 +60,25 @@ public class CityManager extends PersistentState {
         put(nbt, "currentTime", this.currentTime);
         put(nbt, "cities", this.cities);
         return nbt;
+    }
+
+    public City createCity(BlockPos pos) {
+        var city = new City(UUID.randomUUID(), this.world, pos);
+        this.cities.put(city.getCityId(), city);
+        return city;
+    }
+
+    public City getCityAt(BlockPos pos) {
+        for (City city : this.cities.values()) {
+            if (city.isPosWithinCity(pos)) {
+                return city;
+            }
+        }
+
+        return null;
+    }
+
+    public List<City> getCities() {
+        return this.cities.values().stream().toList();
     }
 }

@@ -8,11 +8,12 @@ import net.minecraft.text.Text;
 
 public class CivilizationCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
-        dispatcher.register(CommandManager.literal("citizenship")
+        dispatcher.register(CommandManager.literal("civilization")
                 .executes(context -> {
                     context.getSource().sendFeedback(Text.of("%s %s".formatted(Constraints.MOD_NAME, Constraints.MOD_VERSION)), false);
                     return 0;
                 })
+                .then(CityCommand.register())
         );
     }
 }
