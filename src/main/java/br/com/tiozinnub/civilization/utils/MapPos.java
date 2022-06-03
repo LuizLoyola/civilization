@@ -23,20 +23,36 @@ public class MapPos {
         return new MapPos(x + other.x, z + other.z);
     }
 
-    public MapPos move(CardinalDirection direction) {
-        return direction.move(this);
+    public MapPos move(CardinalDirection direction, int amount) {
+        return direction.move(this, amount);
+    }
+
+    public MapPos north() {
+        return north(1);
     }
 
     public MapPos north(int amount) {
         return new MapPos(x, z - amount);
     }
 
+    public MapPos south() {
+        return south(1);
+    }
+
     public MapPos south(int amount) {
         return new MapPos(x, z + amount);
     }
 
+    public MapPos east() {
+        return east(1);
+    }
+
     public MapPos east(int amount) {
         return new MapPos(x + amount, z);
+    }
+
+    public MapPos west() {
+        return west(1);
     }
 
     public MapPos west(int amount) {
@@ -66,5 +82,27 @@ public class MapPos {
     @Override
     public String toString() {
         return "MapPos{x=%d, z=%d}".formatted(x, z);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof MapPos && ((MapPos) obj).x == x && ((MapPos) obj).z == z;
+    }
+
+    public CardinalDirection getDirection(MapPos other) {
+        if (this == other) return null;
+
+        if (this.getX() == other.getX())
+            if (this.getZ() > other.getZ())
+                return CardinalDirection.NORTH;
+            else
+                return CardinalDirection.SOUTH;
+        else if (this.getZ() == other.getZ())
+            if (this.getX() > other.getX())
+                return CardinalDirection.EAST;
+            else
+                return CardinalDirection.WEST;
+        else
+            return null;
     }
 }

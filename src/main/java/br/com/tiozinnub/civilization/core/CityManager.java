@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.core.city;
+package br.com.tiozinnub.civilization.core;
 
 import com.google.common.collect.Maps;
 import net.minecraft.nbt.NbtCompound;

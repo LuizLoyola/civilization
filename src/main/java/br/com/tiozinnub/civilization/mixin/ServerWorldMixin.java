@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.mixin;
 
-import br.com.tiozinnub.civilization.core.city.CityManager;
+import br.com.tiozinnub.civilization.core.CityManager;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;

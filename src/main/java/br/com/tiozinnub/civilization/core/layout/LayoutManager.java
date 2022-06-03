@@ -1,6 +1,6 @@
-package br.com.tiozinnub.civilization.core.city.layout;
+package br.com.tiozinnub.civilization.core.layout;
 
-import br.com.tiozinnub.civilization.core.city.City;
+import br.com.tiozinnub.civilization.core.City;
 
 public class LayoutManager {
     private final City city;

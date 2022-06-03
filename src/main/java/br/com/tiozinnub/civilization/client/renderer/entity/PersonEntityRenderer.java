@@ -171,10 +171,11 @@ public class PersonEntityRenderer extends LivingEntityRenderer<PersonEntity, Pla
 
         if (showHealth) {
             var labelHeight = getLabelHeight(person, multilineNameplate.size(), lineCount);
-            var health = person.getHealth();
+            var health = Math.floor(person.getHealth());
             var maxHealth = person.getMaxHealth();
 
-            var hearts = Math.ceil(health / 2);
+            var hearts = Math.floor(health / 2);
+            var halfHeart = health / 2 != hearts;
             var maxHearts = maxHealth / 2;
             var heartChar = "\u2764";
 
@@ -185,9 +186,14 @@ public class PersonEntityRenderer extends LivingEntityRenderer<PersonEntity, Pla
             } else {
                 var healthTextBuilder = new StringBuilder();
 
-                healthTextBuilder.append(Formatting.RED);
+                healthTextBuilder.append(Formatting.DARK_RED);
                 for (int i = 0; i < maxHearts; i++) {
                     if (i == hearts) {
+                        if (halfHeart)
+                            healthTextBuilder.append(Formatting.RED);
+                        else
+                            healthTextBuilder.append(Formatting.GRAY);
+                    } else if (i == hearts + 1 && halfHeart) {
                         healthTextBuilder.append(Formatting.GRAY);
                     }
                     healthTextBuilder.append(heartChar);

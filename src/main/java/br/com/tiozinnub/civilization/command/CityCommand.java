@@ -15,17 +15,17 @@ import static net.minecraft.server.command.CommandManager.literal;
 public class CityCommand {
     public static ArgumentBuilder<ServerCommandSource, ?> register() {
         return literal("city")
-                .executes(CityCommand::executeCityGet)
-                .then(literal("create").executes(CityCommand::executeCityCreate))
-                .then(literal("delete").executes(CityCommand::executeCityDeleteHere)
-                        .then(literal("here").executes(CityCommand::executeCityDeleteHere))
-                        .then(literal("at").then(argument("position", BlockPosArgumentType.blockPos()).executes(CityCommand::executeCityDeleteAt)))
-                        .then(literal("all").executes(CityCommand::executeCityDeleteAll))
+                .executes(CityCommand::executeGet)
+                .then(literal("create").executes(CityCommand::executeCreate))
+                .then(literal("delete").executes(CityCommand::executeDeleteHere)
+                        .then(literal("here").executes(CityCommand::executeDeleteHere))
+                        .then(literal("at").then(argument("position", BlockPosArgumentType.blockPos()).executes(CityCommand::executeDeleteAt)))
+                        .then(literal("all").executes(CityCommand::executeDeleteAll))
                 )
-                .then(literal("get").executes(CityCommand::executeCityGet));
+                .then(literal("get").executes(CityCommand::executeGet));
     }
 
-    private static int executeCityDeleteHere(CommandContext<ServerCommandSource> context) {
+    private static int executeDeleteHere(CommandContext<ServerCommandSource> context) {
         var source = context.getSource();
         var world = source.getWorld();
         var player = getPlayer(context);
@@ -41,26 +41,32 @@ public class CityCommand {
         if (city == null) {
             source.sendError(Text.of("You are not in a city."));
             return 1;
-        } else {
-            city.markForDeletion();
-            return 0;
         }
+
+        city.markForDeletion();
+        source.sendFeedback(Text.of("City %s deleted.".formatted(city.getName())), false);
+        return 0;
     }
 
-    private static int executeCityDeleteAll(CommandContext<ServerCommandSource> context) {
+    private static int executeDeleteAll(CommandContext<ServerCommandSource> context) {
         var source = context.getSource();
         var world = source.getWorld();
 
         var cityManager = ((IServerWorldExt) world).getCityManager();
+        var count = 0;
 
         for (var city : cityManager.getCities()) {
             city.markForDeletion();
+            source.sendFeedback(Text.of("City %s deleted.".formatted(city.getName())), false);
+            count++;
         }
+
+        source.sendFeedback(Text.of("%s cities deleted.".formatted(count)), false);
 
         return 0;
     }
 
-    private static int executeCityDeleteAt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private static int executeDeleteAt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         var source = context.getSource();
         var world = source.getWorld();
 
@@ -73,13 +79,14 @@ public class CityCommand {
         if (city == null) {
             source.sendError(Text.of("You are not in a city."));
             return 1;
-        } else {
-            city.markForDeletion();
-            return 0;
         }
+
+        city.markForDeletion();
+        source.sendFeedback(Text.of("City %s deleted.".formatted(city.getName())), false);
+        return 0;
     }
 
-    private static int executeCityGet(CommandContext<ServerCommandSource> context) {
+    private static int executeGet(CommandContext<ServerCommandSource> context) {
         var source = context.getSource();
         var world = source.getWorld();
         var player = getPlayer(context);
@@ -95,13 +102,13 @@ public class CityCommand {
         if (city == null) {
             source.sendError(Text.of("You are not in a city."));
             return 1;
-        } else {
-            source.sendFeedback(Text.of("You are at %s".formatted(city.getName())), false);
-            return 0;
         }
+
+        source.sendFeedback(Text.of("You are at %s".formatted(city.getName())), false);
+        return 0;
     }
 
-    private static int executeCityCreate(CommandContext<ServerCommandSource> context) {
+    private static int executeCreate(CommandContext<ServerCommandSource> context) {
         var source = context.getSource();
         var world = source.getWorld();
         var player = getPlayer(context);

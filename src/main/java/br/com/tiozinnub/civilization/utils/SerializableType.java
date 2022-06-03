@@ -6,7 +6,9 @@ public enum SerializableType {
     BLOCK_POS,
     MAP_POS,
     DIRECTION,
+    CARDINAL_DIRECTION,
     UUID,
     BYTE,
+    OBJECT,
     LIST,
 }
