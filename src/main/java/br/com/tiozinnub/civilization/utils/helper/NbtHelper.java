@@ -41,4 +41,9 @@ public class NbtHelper {
     public static Integer get(NbtCompound nbt, String key) {
         return nbt.getInt(key);
     }
+
+    public static <T extends Serializable> T get(NbtCompound nbt, String key, Function<NbtCompound, T> valueConstructor) {
+        var compound = nbt.getCompound(key);
+        return valueConstructor.apply(compound);
+    }
 }

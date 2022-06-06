@@ -1,6 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "civilization:block/city_center"
+    "all": "civilization:block/city_center_block"
   }
 }

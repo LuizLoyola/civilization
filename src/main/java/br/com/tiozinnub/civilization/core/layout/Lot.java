@@ -1,58 +1,67 @@
 package br.com.tiozinnub.civilization.core.layout;
 
-import br.com.tiozinnub.civilization.core.City;
-import net.minecraft.text.Text;
+import br.com.tiozinnub.civilization.utils.CardinalDirection;
+import br.com.tiozinnub.civilization.utils.MapPos;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 
-public class Lot extends CityLayoutPart {
-    private int x;
-    private int z;
-    private int width;
-    private int height;
-    private BlockPos realPos1;
-    private BlockPos realPos2;
+import java.util.EnumSet;
 
-    private static final int LOT_SIZE = 7;
-    private static final int INNER_MARGIN = 1;
-    private static final int OUTER_MARGIN = 1;
+public class Lot {
+    private final CityBlock cityBlock;
+    private final int x;
+    private final int z;
+    private final BlockPos realPos1;
+    private final BlockPos realPos2;
+    private final EnumSet<LotFeature> features;
+    private final EnumSet<CardinalDirection> streetDirections;
 
-    public Lot(City city) {
-        super(city);
-    }
+    public static final int LOT_SIZE = 7;
+    public static final int INNER_MARGIN = 1;
+    public static final int OUTER_MARGIN = 1;
 
-    @Override
     public Box getBox() {
-        return new Box(this.realPos1, this.realPos2);
+        return new Box(this.realPos1, this.realPos2).withMaxY(realPos1.getY() + 5);
     }
 
-    @Override
-    public Text getDescription() {
-        return Text.of("Lot at %d,%d (size %dx%d)".formatted(this.x,
-                this.z,
-                this.width,
-                this.height
-        ));
-    }
+    public Lot(CityBlock cityBlock, int x, int z) {
+        this.cityBlock = cityBlock;
 
-    public Lot(City city, CityBlock cityBlock, int x, int z, int width, int height) {
-        this(city);
-
+        this.features = EnumSet.noneOf(LotFeature.class);
         var cityBlockWidth = cityBlock.getSizeX() * 3 - 1;
         var cityBlockHeight = cityBlock.getSizeZ() * 3 - 1;
 
-        if (x < 0 || x + width > cityBlockWidth) throw new IllegalArgumentException("x must be between 0 and " + cityBlockWidth);
-        if (z < 0 || z + height > cityBlockHeight) throw new IllegalArgumentException("z must be between 0 and " + cityBlockHeight);
-        if (width > cityBlockWidth - x) throw new IllegalArgumentException("width must be less than " + (cityBlockWidth - x));
-        if (height > cityBlockHeight - z) throw new IllegalArgumentException("height must be less than " + (cityBlockHeight - z));
+        if (x < 0 || x >= cityBlockWidth || z < 0 || z >= cityBlockHeight) {
+            throw new IllegalArgumentException("Invalid lot position");
+        }
 
         this.x = x;
         this.z = z;
-        this.width = width;
-        this.height = height;
 
-        this.realPos1 = cityBlock.getRealPos1().add(OUTER_MARGIN + (x * (INNER_MARGIN + LOT_SIZE)), 0, OUTER_MARGIN + (z * (INNER_MARGIN + LOT_SIZE)));
-        this.realPos2 = realPos1.add(width * (LOT_SIZE + INNER_MARGIN), 0, height * (LOT_SIZE + INNER_MARGIN));
+        this.realPos1 = cityBlock.getRealPos1().add(OUTER_MARGIN + (x * (INNER_MARGIN + LOT_SIZE)), 1, OUTER_MARGIN + (z * (INNER_MARGIN + LOT_SIZE)));
+        this.realPos2 = realPos1.add(LOT_SIZE - 1, 0, LOT_SIZE - 1);
+
+        // check features
+        streetDirections = EnumSet.noneOf(CardinalDirection.class);
+        if (x == 0) {
+            streetDirections.add(CardinalDirection.WEST);
+        }
+        if (x == cityBlockWidth - 1) {
+            streetDirections.add(CardinalDirection.EAST);
+        }
+        if (z == 0) {
+            streetDirections.add(CardinalDirection.NORTH);
+        }
+        if (z == cityBlockHeight - 1) {
+            streetDirections.add(CardinalDirection.SOUTH);
+        }
+        if (streetDirections.size() > 0) {
+            features.add(LotFeature.FACING_STREET);
+
+            if (streetDirections.size() > 1) {
+                features.add(LotFeature.CORNER);
+            }
+        }
     }
 
     public int getX() {
@@ -63,12 +72,8 @@ public class Lot extends CityLayoutPart {
         return z;
     }
 
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
+    public MapPos getPos() {
+        return new MapPos(x, z);
     }
 
     public BlockPos getRealPos1() {
@@ -80,12 +85,28 @@ public class Lot extends CityLayoutPart {
     }
 
     @Override
-    public void registerProperties(SerializableHelper helper) {
-        helper.registerProperty("x", this::getX, p -> this.x = p, 0);
-        helper.registerProperty("z", this::getZ, p -> this.z = p, 0);
-        helper.registerProperty("width", this::getWidth, p -> this.width = p, 0);
-        helper.registerProperty("height", this::getHeight, p -> this.height = p, 0);
-        helper.registerProperty("realPos1", this::getRealPos1, p -> this.realPos1 = p, null);
-        helper.registerProperty("realPos2", this::getRealPos2, p -> this.realPos2 = p, null);
+    public boolean equals(Object obj) {
+        return obj instanceof Lot lot && lot.getX() == this.getX() && lot.getZ() == this.getZ();
+    }
+
+    public boolean hasFeature(LotFeature feature) {
+        return this.features.contains(feature);
+    }
+
+    public boolean isFacingStreet() {
+        return this.features.contains(LotFeature.FACING_STREET);
+    }
+
+    public EnumSet<CardinalDirection> getStreetDirections() {
+        return this.streetDirections;
+    }
+
+    public CityBlock getCityBlock() {
+        return cityBlock;
+    }
+
+    public enum LotFeature {
+        FACING_STREET,
+        CORNER,
     }
 }

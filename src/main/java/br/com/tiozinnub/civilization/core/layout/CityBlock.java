@@ -88,4 +88,12 @@ public class CityBlock extends CityLayoutPart {
         helper.registerProperty("sizeX", this::getSizeX, p -> this.sizeX = p, 0);
         helper.registerProperty("sizeZ", this::getSizeZ, p -> this.sizeZ = p, 0);
     }
+
+    public int getMaxLotWidth() {
+        return this.getSizeX() * 3 - 1;
+    }
+
+    public int getMaxLotHeight() {
+        return this.getSizeZ() * 3 - 1;
+    }
 }

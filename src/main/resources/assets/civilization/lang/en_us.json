@@ -1,5 +1,7 @@
 {
+  "block.civilization.blueprint_table_block": "Blueprint Table",
+  "block.civilization.city_center_block": "City Center",
   "item.civilization.blueprint": "Blueprint",
-
+  "itemGroup.civilization.special_blocks": "Civilization: Special Blocks",
   "itemGroup.civilization.special_items": "Civilization: Special Items"
 }

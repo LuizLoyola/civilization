@@ -10,3 +10,4 @@ public abstract class BlockEntityBase extends BlockEntity {
         super(type, pos, state);
     }
 }
+

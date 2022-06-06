@@ -8,7 +8,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 
 public enum CardinalDirection implements StringIdentifiable {
-    NORTH("north", Direction.Axis.Z), SOUTH("south", Direction.Axis.Z), EAST("east", Direction.Axis.X), WEST("west", Direction.Axis.X);
+    NORTH("north", Direction.Axis.Z),
+    SOUTH("south", Direction.Axis.Z),
+    EAST("east", Direction.Axis.X),
+    WEST("west", Direction.Axis.X);
 
     private final String name;
     private final Direction.Axis axis;
@@ -104,6 +107,15 @@ public enum CardinalDirection implements StringIdentifiable {
             case 2 -> opposite();
             case 3 -> left();
             default -> this;
+        };
+    }
+
+    public Direction asDirection() {
+        return switch (this) {
+            case NORTH -> Direction.NORTH;
+            case SOUTH -> Direction.SOUTH;
+            case EAST -> Direction.EAST;
+            case WEST -> Direction.WEST;
         };
     }
 }
