@@ -28,6 +28,10 @@ public class CityManager extends PersistentState {
         return this.cities.get(uuid);
     }
 
+    public City getCity(String name, boolean caseSensitive) {
+        return this.cities.values().stream().filter(city -> caseSensitive ? city.getName().equals(name) : city.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+    }
+
     public void tick() {
         ++this.currentTime;
 
@@ -62,8 +66,8 @@ public class CityManager extends PersistentState {
         return nbt;
     }
 
-    public City createCity(BlockPos pos) {
-        var city = new City(UUID.randomUUID(), this.world, pos);
+    public City createCity(BlockPos pos, String name) {
+        var city = new City(this.world, pos, name);
         this.cities.put(city.getCityId(), city);
         return city;
     }

@@ -1,110 +1,102 @@
 package br.com.tiozinnub.civilization.command;
 
+import br.com.tiozinnub.civilization.core.City;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 
+import java.util.function.Function;
+
+import static br.com.tiozinnub.civilization.command.CityCommand.CityGetType.*;
+import static br.com.tiozinnub.civilization.utils.helper.CommandHelper.getBlockPos;
 import static br.com.tiozinnub.civilization.utils.helper.CommandHelper.getPlayer;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class CityCommand {
     public static ArgumentBuilder<ServerCommandSource, ?> register() {
-        return literal("city")
-                .executes(CityCommand::executeGet)
-                .then(literal("create").executes(CityCommand::executeCreate))
-                .then(literal("delete").executes(CityCommand::executeDeleteHere)
-                        .then(literal("here").executes(CityCommand::executeDeleteHere))
-                        .then(literal("at").then(argument("position", BlockPosArgumentType.blockPos()).executes(CityCommand::executeDeleteAt)))
-                        .then(literal("all").executes(CityCommand::executeDeleteAll))
-                )
-                .then(literal("get").executes(CityCommand::executeGet));
+
+        return wrapCity(literal("city"), HERE)
+                .then(literal("create").then(argument("city_name", StringArgumentType.string()).executes(CityCommand::executeCreate)))
+                .then(literal("list").executes(CityCommand::executeList))
+                .then(literal("at").then(wrapCity(argument("position", BlockPosArgumentType.blockPos()), AT)))
+                .then(literal("named").then(wrapCity(argument("name", StringArgumentType.string()), NAMED)))
+                .then(wrapCity(literal("here"), HERE));
     }
 
-    private static int executeDeleteHere(CommandContext<ServerCommandSource> context) {
+    enum CityGetType {
+        HERE, AT, NAMED
+    }
+
+    private static ArgumentBuilder<ServerCommandSource, ?> wrapCity(ArgumentBuilder<ServerCommandSource, ?> builder, CityGetType type) {
+        return builder.executes(ctx -> getCityAndExecute(ctx, type, city -> executeInfo(ctx, city)))
+                .then(literal("delete").executes(ctx -> getCityAndExecute(ctx, type, city -> executeDelete(ctx, city))));
+    }
+
+    private static int getCityAndExecute(CommandContext<ServerCommandSource> context, CityGetType type, Function<City, Integer> function) {
         var source = context.getSource();
-        var world = source.getWorld();
-        var player = getPlayer(context);
-        if (player == null) {
-            source.sendError(Text.of("You must be a player to execute this command."));
-            return 1;
+
+        City city = null;
+        BlockPos location = null;
+        String name = null;
+
+        if (type == HERE) {
+            var player = getPlayer(context);
+            if (player == null) {
+                source.sendError(Text.of("You must be a player to execute this command."));
+                return 1;
+            }
+            location = player.getBlockPos();
         }
 
+        if (type == AT) {
+            location = getBlockPos(context, "position");
+            if (location == null) {
+                source.sendError(Text.of("Invalid position."));
+                return 1;
+            }
+        }
+
+        if (type == NAMED) {
+            name = StringArgumentType.getString(context, "name");
+            if (name == null) {
+                source.sendError(Text.of("Invalid name."));
+                return 1;
+            }
+        }
+
+        var world = source.getWorld();
         var cityManager = ((IServerWorldExt) world).getCityManager();
 
-        var city = cityManager.getCityAt(player.getBlockPos());
+        if (location != null) {
+            city = cityManager.getCityAt(location);
+        } else if (name != null) {
+            city = cityManager.getCity(name, false);
+        }
 
         if (city == null) {
-            source.sendError(Text.of("You are not in a city."));
+            if (type == HERE) source.sendError(Text.of("No city here."));
+            if (type == AT) source.sendError(Text.of("No city at this position."));
+            if (type == NAMED) source.sendError(Text.of("No city named " + name + "."));
             return 1;
         }
 
+        return function.apply(city);
+    }
+
+    private static int executeDelete(CommandContext<ServerCommandSource> ctx, City city) {
         city.markForDeletion();
-        source.sendFeedback(Text.of("City %s deleted.".formatted(city.getName())), false);
+        ctx.getSource().sendFeedback(Text.of("City " + city.getName() + " deleted."), false);
         return 0;
     }
 
-    private static int executeDeleteAll(CommandContext<ServerCommandSource> context) {
-        var source = context.getSource();
-        var world = source.getWorld();
-
-        var cityManager = ((IServerWorldExt) world).getCityManager();
-        var count = 0;
-
-        for (var city : cityManager.getCities()) {
-            city.markForDeletion();
-            source.sendFeedback(Text.of("City %s deleted.".formatted(city.getName())), false);
-            count++;
-        }
-
-        source.sendFeedback(Text.of("%s cities deleted.".formatted(count)), false);
-
-        return 0;
-    }
-
-    private static int executeDeleteAt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        var source = context.getSource();
-        var world = source.getWorld();
-
-        var pos = BlockPosArgumentType.getBlockPos(context, "position");
-
-        var cityManager = ((IServerWorldExt) world).getCityManager();
-
-        var city = cityManager.getCityAt(pos);
-
-        if (city == null) {
-            source.sendError(Text.of("You are not in a city."));
-            return 1;
-        }
-
-        city.markForDeletion();
-        source.sendFeedback(Text.of("City %s deleted.".formatted(city.getName())), false);
-        return 0;
-    }
-
-    private static int executeGet(CommandContext<ServerCommandSource> context) {
-        var source = context.getSource();
-        var world = source.getWorld();
-        var player = getPlayer(context);
-        if (player == null) {
-            source.sendError(Text.of("You must be a player to execute this command."));
-            return 1;
-        }
-
-        var cityManager = ((IServerWorldExt) world).getCityManager();
-
-        var city = cityManager.getCityAt(player.getBlockPos());
-
-        if (city == null) {
-            source.sendError(Text.of("You are not in a city."));
-            return 1;
-        }
-
-        source.sendFeedback(Text.of("You are at %s".formatted(city.getName())), false);
+    private static Integer executeInfo(CommandContext<ServerCommandSource> ctx, City city) {
+        ctx.getSource().sendFeedback(Text.of(city.getName()), false);
         return 0;
     }
 
@@ -117,11 +109,29 @@ public class CityCommand {
             return 1;
         }
 
+        var cityName = context.getArgument("city_name", String.class);
+
         var cityManager = ((IServerWorldExt) world).getCityManager();
 
-        cityManager.createCity(player.getBlockPos());
+        try {
+            cityManager.createCity(player.getBlockPos(), cityName);
+            source.sendFeedback(Text.of("City %s created!".formatted(cityName)), false);
+            return 0;
+        } catch (IllegalArgumentException e) {
+            source.sendError(Text.of(e.getMessage()));
+            return 1;
+        }
+    }
 
-        source.sendFeedback(Text.of("City created!"), false);
+    private static int executeList(CommandContext<ServerCommandSource> context) {
+        var source = context.getSource();
+        var world = source.getWorld();
+
+        var cityManager = ((IServerWorldExt) world).getCityManager();
+        source.sendFeedback(Text.of("%d cities found:".formatted(cityManager.getCities().size())), false);
+        for (var city : cityManager.getCities()) {
+            source.sendFeedback(Text.of("- %s".formatted(city.getName())), false);
+        }
         return 0;
     }
 }

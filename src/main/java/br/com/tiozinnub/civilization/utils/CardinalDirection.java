@@ -39,19 +39,6 @@ public enum CardinalDirection implements StringIdentifiable {
         return name;
     }
 
-    public MapPos move(MapPos pos) {
-        return move(pos, 1);
-    }
-
-    public MapPos move(MapPos pos, int amount) {
-        return switch (this) {
-            case NORTH -> pos.north(amount);
-            case SOUTH -> pos.south(amount);
-            case EAST -> pos.east(amount);
-            case WEST -> pos.west(amount);
-        };
-    }
-
     public BlockPos move(BlockPos pos) {
         return move(pos, 1);
     }

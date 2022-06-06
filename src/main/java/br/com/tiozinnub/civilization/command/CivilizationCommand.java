@@ -14,7 +14,6 @@ public class CivilizationCommand {
                 .executes(CivilizationCommand::executeVersion)
                 .then(literal("version").executes(CivilizationCommand::executeVersion))
                 .then(CityCommand.register())
-                .then(LayoutCommand.register())
         );
     }
 

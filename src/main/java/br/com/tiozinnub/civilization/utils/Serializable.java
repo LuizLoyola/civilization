@@ -43,7 +43,6 @@ public abstract class Serializable {
                 case INTEGER -> Optional.ofNullable((Integer) getter.get()).ifPresent(value -> nbt.putInt(key, value));
                 case STRING -> Optional.ofNullable((String) getter.get()).ifPresent(value -> nbt.putString(key, value));
                 case BLOCK_POS -> Optional.ofNullable((BlockPos) getter.get()).ifPresent(value -> nbt.putLong(key, value.asLong()));
-                case MAP_POS -> Optional.ofNullable((MapPos) getter.get()).ifPresent(value -> nbt.putLong(key, value.asLong()));
                 case DIRECTION -> Optional.ofNullable((Direction) getter.get()).ifPresent(value -> nbt.putString(key, value.getName()));
                 case CARDINAL_DIRECTION -> Optional.ofNullable((CardinalDirection) getter.get()).ifPresent(value -> nbt.putString(key, value.getName()));
                 case UUID -> Optional.ofNullable((UUID) getter.get()).ifPresent(value -> nbt.putString(key, value.toString()));
@@ -84,7 +83,6 @@ public abstract class Serializable {
                     case INTEGER -> ((Consumer<Integer>) setter).accept(containsKey ? nbt.getInt(key) : (Integer) this.defaultValues.get(key));
                     case STRING -> ((Consumer<String>) setter).accept(containsKey ? nbt.getString(key) : (String) this.defaultValues.get(key));
                     case BLOCK_POS -> ((Consumer<BlockPos>) setter).accept(containsKey ? BlockPos.fromLong(nbt.getLong(key)) : (BlockPos) this.defaultValues.get(key));
-                    case MAP_POS -> ((Consumer<MapPos>) setter).accept(containsKey ? MapPos.fromLong(nbt.getLong(key)) : (MapPos) this.defaultValues.get(key));
                     case DIRECTION -> ((Consumer<Direction>) setter).accept(containsKey ? Direction.byName(nbt.getString(key)) : (Direction) this.defaultValues.get(key));
                     case CARDINAL_DIRECTION ->
                             ((Consumer<CardinalDirection>) setter).accept(containsKey ? CardinalDirection.byName(nbt.getString(key)) : (CardinalDirection) this.defaultValues.get(key));
@@ -115,10 +113,6 @@ public abstract class Serializable {
 
         public void registerProperty(String key, Supplier<BlockPos> getter, Consumer<BlockPos> setter, BlockPos defaultValue) {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BLOCK_POS);
-        }
-
-        public void registerProperty(String key, Supplier<MapPos> getter, Consumer<MapPos> setter, MapPos defaultValue) {
-            this.registerProperty(key, getter, setter, defaultValue, SerializableType.MAP_POS);
         }
 
         public void registerProperty(String key, Supplier<Integer> getter, Consumer<Integer> setter, Integer defaultValue) {
