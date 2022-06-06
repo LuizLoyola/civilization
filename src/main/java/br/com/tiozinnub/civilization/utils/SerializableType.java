@@ -8,6 +8,7 @@ public enum SerializableType {
     CARDINAL_DIRECTION,
     UUID,
     BYTE,
-    OBJECT,
+    BOX,
+    SERIALIZABLE,
     LIST,
 }

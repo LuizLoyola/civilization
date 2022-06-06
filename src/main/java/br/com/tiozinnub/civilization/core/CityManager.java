@@ -50,7 +50,7 @@ public class CityManager extends PersistentState {
 
     public static CityManager fromNbt(ServerWorld world, NbtCompound nbt) {
         CityManager cityManager = new CityManager(world);
-        cityManager.currentTime = get(nbt, "currentTime");
+        cityManager.currentTime = get(nbt, "currentTime", 0);
         get(nbt, "cities", UUID::fromString, (c) -> new City(world, c), cityManager.cities);
         return cityManager;
     }
