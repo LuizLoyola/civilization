@@ -67,7 +67,12 @@ public class CityManager extends PersistentState {
     }
 
     public City createCity(BlockPos pos, String name) {
-        var city = new City(this.world, pos, name);
+        var city = this.getCity(name, false);
+        if (city != null) {
+            throw new IllegalArgumentException("City with name '" + city.getName() + "' already exists.");
+        }
+
+        city = new City(this.world, pos, name);
         this.cities.put(city.getCityId(), city);
         return city;
     }

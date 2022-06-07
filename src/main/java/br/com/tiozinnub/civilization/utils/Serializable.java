@@ -9,6 +9,7 @@ import net.minecraft.util.math.Direction;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static br.com.tiozinnub.civilization.utils.helper.NbtHelper.get;
 import static br.com.tiozinnub.civilization.utils.helper.NbtHelper.put;
@@ -74,10 +75,19 @@ public abstract class Serializable {
         return fromNbt(nbt.getCompound(key));
     }
 
+    public Set<Map.Entry<String, SerializableType>> customKeyOrder(Set<Map.Entry<String, SerializableType>> entrySet) {
+        // place SERIALIZABLEs last
+        var serializableSet = entrySet.stream().filter(entry -> entry.getValue() == SerializableType.SERIALIZABLE).collect(Collectors.toSet());
+        var otherSet = entrySet.stream().filter(entry -> entry.getValue() != SerializableType.SERIALIZABLE).collect(Collectors.toSet());
+        var result = new LinkedHashSet<>(otherSet);
+        result.addAll(serializableSet);
+        return result;
+    }
+
     @SuppressWarnings("unchecked")
     public Serializable fromNbt(NbtCompound nbt) {
         if (nbt != null) {
-            for (var entry : this.types.entrySet()) {
+            for (var entry : customKeyOrder(this.types.entrySet())) {
                 var key = entry.getKey();
                 var type = entry.getValue();
                 var setter = this.setters.get(key);
@@ -92,7 +102,7 @@ public abstract class Serializable {
                     case UUID -> ((Consumer<UUID>) setter).accept(get(nbt, key, (UUID) this.defaultValues.get(key)));
                     case BYTE -> ((Consumer<Byte>) setter).accept(get(nbt, key, (Byte) this.defaultValues.get(key)));
                     case BOX -> ((Consumer<Box>) setter).accept(get(nbt, key, (Box) this.defaultValues.get(key)));
-                    case SERIALIZABLE -> ((Consumer<Serializable>) setter).accept(get(nbt, key, (Supplier<? extends Serializable>) this.constructors.get(key).get()));
+                    case SERIALIZABLE -> ((Consumer<Serializable>) setter).accept(get(nbt, key, this.constructors.get(key)));
                     case LIST -> {
                         var getter = this.getters.get(key);
                         var list = (List<Serializable>) getter.get();

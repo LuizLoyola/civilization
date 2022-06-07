@@ -1,6 +1,7 @@
 package br.com.tiozinnub.civilization.command;
 
 import br.com.tiozinnub.civilization.core.City;
+import br.com.tiozinnub.civilization.core.structure.StructureType;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -20,22 +21,25 @@ import static net.minecraft.server.command.CommandManager.literal;
 
 public class CityCommand {
     public static ArgumentBuilder<ServerCommandSource, ?> register() {
-
-        return wrapCity(literal("city"), HERE)
-                .then(literal("create").then(argument("city_name", StringArgumentType.string()).executes(CityCommand::executeCreate)))
-                .then(literal("list").executes(CityCommand::executeList))
-                .then(literal("at").then(wrapCity(argument("position", BlockPosArgumentType.blockPos()), AT)))
-                .then(literal("named").then(wrapCity(argument("name", StringArgumentType.string()), NAMED)))
-                .then(wrapCity(literal("here"), HERE));
-    }
-
-    enum CityGetType {
-        HERE, AT, NAMED
+        return wrapCity(literal("city"), HERE).then(literal("create").then(argument("city_name", StringArgumentType.string()).executes(CityCommand::executeCreate))).then(literal("list").executes(CityCommand::executeList)).then(literal("at").then(wrapCity(argument("position", BlockPosArgumentType.blockPos()), AT))).then(literal("named").then(wrapCity(argument("name", StringArgumentType.string()), NAMED))).then(wrapCity(literal("here"), HERE));
     }
 
     private static ArgumentBuilder<ServerCommandSource, ?> wrapCity(ArgumentBuilder<ServerCommandSource, ?> builder, CityGetType type) {
         return builder.executes(ctx -> getCityAndExecute(ctx, type, city -> executeInfo(ctx, city)))
-                .then(literal("delete").executes(ctx -> getCityAndExecute(ctx, type, city -> executeDelete(ctx, city))));
+                .then(literal("delete").executes(ctx -> getCityAndExecute(ctx, type, city -> executeDelete(ctx, city))))
+                .then(literal("structure")
+                        .then(literal("add")
+                                .then(argument("structure_type", EnumArgumentType.enumArg(StructureType.class)).executes(ctx -> getCityAndExecute(ctx, type, city -> executeStructureAdd(ctx, city))))
+                        )
+                );
+    }
+
+    private static Integer executeStructureAdd(CommandContext<ServerCommandSource> ctx, City city) {
+        StructureType structureType = EnumArgumentType.getEnum(ctx, StructureType.class, "structure_type");
+
+        city.addStructure(structureType);
+
+        return 1;
     }
 
     private static int getCityAndExecute(CommandContext<ServerCommandSource> context, CityGetType type, Function<City, Integer> function) {
@@ -133,5 +137,9 @@ public class CityCommand {
             source.sendFeedback(Text.of("- %s".formatted(city.getName())), false);
         }
         return 0;
+    }
+
+    enum CityGetType {
+        HERE, AT, NAMED
     }
 }

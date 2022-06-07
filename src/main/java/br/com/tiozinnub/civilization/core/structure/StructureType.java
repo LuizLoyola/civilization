@@ -1,5 +1,12 @@
 package br.com.tiozinnub.civilization.core.structure;
 
-public enum StructureType {
-    HOUSE
+import net.minecraft.util.StringIdentifiable;
+
+public enum StructureType implements StringIdentifiable {
+    HOUSE;
+
+    @Override
+    public String asString() {
+        return this.name().toLowerCase();
+    }
 }
