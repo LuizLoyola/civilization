@@ -40,11 +40,11 @@ public class PersonEntityRenderer extends LivingEntityRenderer<PersonEntity, Pla
                 new BipedEntityModel<>(ctx.getPart(byGender(gender, EntityModelLayers.PLAYER_INNER_ARMOR, EntityModelLayers.PLAYER_SLIM_INNER_ARMOR))),
                 new BipedEntityModel<>(ctx.getPart(byGender(gender, EntityModelLayers.PLAYER_OUTER_ARMOR, EntityModelLayers.PLAYER_SLIM_OUTER_ARMOR)))
         ));
-        this.addFeature(new PersonHeldItemFeatureRenderer<>(this));
+        this.addFeature(new PersonHeldItemFeatureRenderer<>(this, ctx.getHeldItemRenderer()));
         this.addFeature(new StuckArrowsFeatureRenderer<>(ctx, this));
 //        this.addFeature(new Deadmau5FeatureRenderer(this));
 //        this.addFeature(new CapeFeatureRenderer(this));
-        this.addFeature(new HeadFeatureRenderer<>(this, ctx.getModelLoader()));
+        this.addFeature(new HeadFeatureRenderer<>(this, ctx.getModelLoader(), ctx.getHeldItemRenderer()));
         this.addFeature(new ElytraFeatureRenderer<>(this, ctx.getModelLoader()));
 //        this.addFeature(new ShoulderParrotFeatureRenderer<>(this, ctx.getModelLoader()));
         this.addFeature(new TridentRiptideFeatureRenderer<>(this, ctx.getModelLoader()));

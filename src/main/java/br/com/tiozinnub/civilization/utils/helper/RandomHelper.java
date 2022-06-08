@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.utils.helper;
 
-import java.util.Random;
+import net.minecraft.util.math.random.Random;
 
 public class RandomHelper {
     public static <T> T pickOneWeighted(Random random, T item1, int weight1, T item2, int weight2) {

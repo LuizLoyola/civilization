@@ -2,9 +2,9 @@ package br.com.tiozinnub.civilization.entity.property;
 
 import br.com.tiozinnub.civilization.utils.helper.RandomHelper;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.math.random.Random;
 
 import java.util.Locale;
-import java.util.Random;
 
 public enum Gender implements StringIdentifiable {
     MALE,

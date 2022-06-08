@@ -28,9 +28,9 @@ public class CityCommand {
         return builder.executes(ctx -> getCityAndExecute(ctx, type, city -> executeInfo(ctx, city)))
                 .then(literal("delete").executes(ctx -> getCityAndExecute(ctx, type, city -> executeDelete(ctx, city))))
                 .then(literal("structure")
-                        .then(literal("add")
-                                .then(argument("structure_type", EnumArgumentType.enumArg(StructureType.class)).executes(ctx -> getCityAndExecute(ctx, type, city -> executeStructureAdd(ctx, city))))
-                        )
+                                .then(literal("add")
+//                                .then(argument("structure_type", EnumArgumentType.enumArg(StructureType.class)).executes(ctx -> getCityAndExecute(ctx, type, city -> executeStructureAdd(ctx, city))))
+                                )
                 );
     }
 

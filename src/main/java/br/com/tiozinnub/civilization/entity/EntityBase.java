@@ -10,20 +10,12 @@ import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib3.core.IAnimatable;
-import software.bernie.geckolib3.core.PlayState;
-import software.bernie.geckolib3.core.builder.AnimationBuilder;
-import software.bernie.geckolib3.core.controller.AnimationController;
-import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
-import software.bernie.geckolib3.core.manager.AnimationData;
-import software.bernie.geckolib3.core.manager.AnimationFactory;
 
 import java.util.List;
 
 import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 
-public abstract class EntityBase extends LivingEntity implements IAnimatable {
-    private final AnimationFactory factory = new AnimationFactory(this);
+public abstract class EntityBase extends LivingEntity {
 
     protected EntityBase(EntityType<? extends LivingEntity> type, World world) {
         super(type, world);
@@ -31,21 +23,6 @@ public abstract class EntityBase extends LivingEntity implements IAnimatable {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return LivingEntity.createLivingAttributes();
-    }
-
-    private <T extends IAnimatable> PlayState predicate(AnimationEvent<T> event) {
-        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.%s.idle".formatted(getNameId()), true));
-        return PlayState.CONTINUE;
-    }
-
-    @Override
-    public void registerControllers(AnimationData animationData) {
-        animationData.addAnimationController(new AnimationController<>(this, "controller", 0, this::predicate));
-    }
-
-    @Override
-    public AnimationFactory getFactory() {
-        return this.factory;
     }
 
     @Override

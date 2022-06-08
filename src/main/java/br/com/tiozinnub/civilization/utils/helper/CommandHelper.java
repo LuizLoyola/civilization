@@ -9,11 +9,7 @@ import net.minecraft.util.math.BlockPos;
 
 public class CommandHelper {
     public static ServerPlayerEntity getPlayer(CommandContext<ServerCommandSource> context) {
-        try {
-            return context.getSource().getPlayer();
-        } catch (CommandSyntaxException e) {
-            return null;
-        }
+        return context.getSource().getPlayer();
     }
 
     public static BlockPos getBlockPos(CommandContext<ServerCommandSource> context, String parameter) {
