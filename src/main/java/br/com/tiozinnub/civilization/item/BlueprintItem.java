@@ -12,7 +12,6 @@ import net.minecraft.item.ItemUsageContext;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.*;
-import net.minecraft.util.math.Box;
 
 import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 import static br.com.tiozinnub.civilization.utils.helper.ParticleHelper.drawParticleBox;
@@ -33,23 +32,25 @@ public class BlueprintItem extends ItemBase {
     }
 
     @Override
-    protected ActionResult useOnBlockServer(ItemUsageContext context) {
+    protected ActionResult useOnBlockServer(ServerWorld world, ItemUsageContext context) {
         var player = context.getPlayer();
         if (player == null) return ActionResult.PASS;
 
-        var blueprintMaker = new BlueprintMaker();
+        var blueprintMaker = new BlueprintMaker(world);
         blueprintMaker.fromNbt(context.getStack().getNbt());
-        player.sendMessage(blueprintMaker.usedOnBlock(context.getWorld(), context.getBlockPos(), context.getSide()), false);
+        var msg = blueprintMaker.usedOnBlock(context.getWorld(), context.getBlockPos(), context.getSide(), player.isSneaking());
+        if (msg != null) player.sendMessage(msg, false);
         context.getStack().setNbt(blueprintMaker.toNbt());
         return ActionResult.CONSUME;
     }
 
     @Override
     protected TypedActionResult<ItemStack> useServer(ServerWorld world, PlayerEntity player, Hand hand) {
-        var blueprintMaker = new BlueprintMaker();
+        var blueprintMaker = new BlueprintMaker(world);
         var stack = player.getStackInHand(hand);
         blueprintMaker.fromNbt(stack.getNbt());
-        player.sendMessage(blueprintMaker.usedOnAir(world, player.isSneaking()), false);
+        var msg = blueprintMaker.usedOnAir(world, player.isSneaking());
+        if (msg != null) player.sendMessage(msg, false);
         stack.setNbt(blueprintMaker.toNbt());
         return TypedActionResult.success(stack, true);
     }
@@ -59,13 +60,16 @@ public class BlueprintItem extends ItemBase {
         if (!(entity instanceof PlayerEntity player)) return;
         if (!PlayerInventory.isValidHotbarIndex(slot)) return;
 
-        var blueprintMaker = new BlueprintMaker();
+        var blueprintMaker = new BlueprintMaker(null);
         blueprintMaker.fromNbt(stack.getNbt());
 
-        if (blueprintMaker.firstPos != null && blueprintMaker.secondPos != null) {
-            drawParticleBox(world, new Box(blueprintMaker.firstPos, blueprintMaker.secondPos), ParticleTypes.FLAME);
-        } else if (blueprintMaker.firstPos != null) {
-            drawParticleBox(world, blueprintMaker.firstPos, ParticleTypes.FLAME);
+        var box = blueprintMaker.getBox();
+        if (box != null) {
+            var direction = blueprintMaker.getDirection();
+            if (direction != null)
+                drawParticleBox(world, box, ParticleTypes.FLAME, direction.asDirection(), ParticleTypes.SOUL_FIRE_FLAME);
+            else
+                drawParticleBox(world, box, ParticleTypes.FLAME);
         }
     }
 }

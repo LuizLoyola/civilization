@@ -26,6 +26,25 @@ public enum CardinalDirection implements StringIdentifiable {
         return Arrays.stream(values()).filter(direction -> direction.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
+    public static CardinalDirection fromDirection(Direction side) {
+        return switch (side) {
+            case NORTH -> NORTH;
+            case SOUTH -> SOUTH;
+            case EAST -> EAST;
+            case WEST -> WEST;
+            default -> null;
+        };
+    }
+
+    public Direction toDirection() {
+        return switch (this) {
+            case NORTH -> Direction.NORTH;
+            case SOUTH -> Direction.SOUTH;
+            case EAST -> Direction.EAST;
+            case WEST -> Direction.WEST;
+        };
+    }
+
     public String getName() {
         return this.name;
     }

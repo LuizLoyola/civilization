@@ -28,14 +28,18 @@ public class CityCommand {
         return builder.executes(ctx -> getCityAndExecute(ctx, type, city -> executeInfo(ctx, city)))
                 .then(literal("delete").executes(ctx -> getCityAndExecute(ctx, type, city -> executeDelete(ctx, city))))
                 .then(literal("structure")
-                                .then(literal("add")
-//                                .then(argument("structure_type", EnumArgumentType.enumArg(StructureType.class)).executes(ctx -> getCityAndExecute(ctx, type, city -> executeStructureAdd(ctx, city))))
-                                )
+                        .then(literal("add")
+                                .then(argument("structure_type", StringArgumentType.string()).executes(ctx -> getCityAndExecute(ctx, type, city -> executeStructureAdd(ctx, city))))
+                        )
                 );
     }
 
     private static Integer executeStructureAdd(CommandContext<ServerCommandSource> ctx, City city) {
-        StructureType structureType = EnumArgumentType.getEnum(ctx, StructureType.class, "structure_type");
+        StructureType structureType = StructureType.fromString(StringArgumentType.getString(ctx, "structure_type"));
+        if (structureType == null) {
+            ctx.getSource().sendError(Text.of("Invalid structure type"));
+            return 0;
+        }
 
         city.addStructure(structureType);
 

@@ -47,4 +47,16 @@ public class PositionHelper {
         }
         return list;
     }
+
+    public static String blockPosString(BlockPos pos) {
+        return blockPosString(pos, true);
+    }
+
+    public static String blockPosString(BlockPos pos, boolean brackets) {
+        var sb = new StringBuilder();
+        if (brackets) sb.append("[");
+        sb.append(pos.getX()).append(",").append(pos.getY()).append(",").append(pos.getZ());
+        if (brackets) sb.append("]");
+        return sb.toString();
+    }
 }

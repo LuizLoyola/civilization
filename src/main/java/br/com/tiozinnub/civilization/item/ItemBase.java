@@ -22,14 +22,14 @@ public abstract class ItemBase extends Item {
 
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
-        return context.getWorld().isClient() ? useOnBlockClient(context) : useOnBlockServer(context);
+        return context.getWorld().isClient() ? useOnBlockClient((ClientWorld) context.getWorld(), context) : useOnBlockServer((ServerWorld) context.getWorld(), context);
     }
 
-    protected ActionResult useOnBlockClient(ItemUsageContext context) {
+    protected ActionResult useOnBlockClient(ClientWorld world, ItemUsageContext context) {
         return super.useOnBlock(context);
     }
 
-    protected ActionResult useOnBlockServer(ItemUsageContext context) {
+    protected ActionResult useOnBlockServer(ServerWorld world, ItemUsageContext context) {
         return super.useOnBlock(context);
     }
 
