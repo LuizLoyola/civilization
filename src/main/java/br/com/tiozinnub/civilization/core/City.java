@@ -1,21 +1,25 @@
 package br.com.tiozinnub.civilization.core;
 
+import br.com.tiozinnub.civilization.core.blueprinting.Blueprint;
 import br.com.tiozinnub.civilization.core.math.MapArea;
 import br.com.tiozinnub.civilization.core.math.Rectangle;
 import br.com.tiozinnub.civilization.core.structure.StructureType;
+import br.com.tiozinnub.civilization.registry.BlueprintRegistry;
+import br.com.tiozinnub.civilization.utils.CardinalDirection;
 import br.com.tiozinnub.civilization.utils.Serializable;
-import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.*;
+import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.pickOne;
 
 public class City extends Serializable {
     private final ServerWorld world;
@@ -86,11 +90,59 @@ public class City extends Serializable {
     }
 
     public void addStructure(StructureType structureType) {
+        var ids = BlueprintRegistry.getBlueprintIdsForStructure(structureType);
+        // TODO: pick the correct one
+
+        var blueprintId = ids.get(0);
+        var blueprint = BlueprintRegistry.getBlueprint(blueprintId);
+
         // get possible place
-        var place = this.layoutManager.findPlaceForStructure(10, 8, 5, 20);
+        var place = this.layoutManager.findPlaceForStructure(blueprint, 2, 6);
         if (place == null) throw new IllegalStateException("No place found for structure %s".formatted(structureType.asString()));
 
-        this.layoutManager.placeStructure(place);
+        var box = this.layoutManager.placeStructure(place);
+
+        Direction.Axis axis;
+
+        var rnd = this.getWorld().getRandom();
+
+        if (blueprint.getLengthX() == place.getWidth()) {
+            axis = Direction.Axis.X;
+        } else if (blueprint.getLengthZ() == place.getWidth()) {
+            axis = Direction.Axis.Z;
+        } else {
+            // random
+            axis = pickOne(rnd, Direction.Axis.X, Direction.Axis.Z);
+        }
+
+        var direction = switch (axis) {
+            case X -> pickOne(rnd, CardinalDirection.EAST, CardinalDirection.WEST);
+            case Z -> pickOne(rnd, CardinalDirection.NORTH, CardinalDirection.SOUTH);
+            default -> throw new IllegalStateException("Unexpected value: " + axis);
+        };
+
+        this.buildBlueprintAt(blueprint, box, direction);
+    }
+
+    private void buildBlueprintAt(Blueprint blueprint, Box box, CardinalDirection direction) {
+        var b = blueprint.rotate(direction);
+        if (b.getLengthX() != box.getXLength() || b.getLengthZ() != box.getZLength()) {
+            throw new IllegalStateException("Blueprint size does not match place size");
+        }
+
+        box = box.withMaxY(box.minY + b.getLengthY() - 1);
+        var offset = new BlockPos(box.minX, box.minY, box.minZ);
+
+        for (BlockPos pos : getAllPositions(box)) {
+            try {
+                var blockState = b.getBlockState(pos.subtract(offset));
+                if (!blockState.isAir()) {
+                    this.getWorld().setBlockState(pos, blockState);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private class LayoutManager extends Serializable {
@@ -109,6 +161,10 @@ public class City extends Serializable {
             helper.registerProperty("reservedArea", () -> this.reservedArea, (value) -> this.reservedArea = value, MapArea::new);
         }
 
+        public Rectangle findPlaceForStructure(Blueprint blueprint, int minDistance, int maxDistance) {
+            return findPlaceForStructure(blueprint.getLengthX(), blueprint.getLengthZ(), minDistance, maxDistance);
+        }
+
         public Rectangle findPlaceForStructure(int width, int height, int minDistance, int maxDistance) {
             var possibleArea = this.reservedArea.inflate(maxDistance).subtract(this.reservedArea.inflate(minDistance));
             var possibleSpots = possibleArea.fitRectangle(width, height, true);
@@ -118,14 +174,16 @@ public class City extends Serializable {
             return possibleSpots.get(world.getRandom().nextInt(possibleSpots.size()));
         }
 
-        public void placeStructure(Rectangle rectangle) {
+        public Box placeStructure(Rectangle rectangle) {
             var box = this.settleRectangle(rectangle);
-            box = box.withMaxY(box.minY + 5);
-            for (var pos : getAllPositions(box)) {
-                world.setBlockState(pos, Blocks.STONE.getDefaultState());
-            }
+//            box = box.withMaxY(box.minY + 5);
+//            for (var pos : getAllPositions(box)) {
+//                world.setBlockState(pos, Blocks.STONE.getDefaultState());
+//            }
 
             this.reservedArea = this.reservedArea.add(rectangle);
+
+            return box;
         }
 
         public Box settleRectangle(Rectangle rectangle) {

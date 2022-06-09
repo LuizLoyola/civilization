@@ -1,0 +1,83 @@
+Civilization
+0.0.1
+# Blueprint file for Civilization mod by TiozinNub.
+# Generated using the blueprint item from within the game at 2022-06-08 18:04:13.
+8 6 7
+west
+# Layer 5:
+.......
+a.....a
+.......
+.......
+.......
+.......
+a.....a
+.......
+# Layer 4:
+.......
+bcccccb
+deeeeed
+deeeeed
+deeeeed
+deeeeed
+bcccccb
+.......
+# Layer 3:
+.......
+bfffffb
+fg...hf
+f.....f
+f.....f
+fg...hf
+bfffffb
+.......
+# Layer 2:
+i.....i
+bfjfffb
+f.....f
+k.....k
+k.....k
+f.....f
+bflllfb
+m.....m
+# Layer 1:
+.......
+bfnfffb
+f.....f
+fo..pqf
+fr..pqf
+fs....f
+bfffffb
+.......
+# Layer 0:
+..e....
+bcccccb
+dfffffd
+dfffffd
+dfffffd
+dfffffd
+bcccccb
+.......
+# Block mapping:
+a=minecraft:torch
+b=minecraft:oak_log
+c=minecraft:oak_log[axis=z]
+d=minecraft:oak_log[axis=x]
+e=minecraft:oak_slab
+f=minecraft:oak_planks
+g=minecraft:wall_torch[facing=south]
+h=minecraft:wall_torch
+i=minecraft:wall_torch[facing=west]
+j=minecraft:oak_door[hinge=right,half=upper,facing=west]
+k=minecraft:oak_fence[east=true,west=true]
+l=minecraft:oak_fence[south=true,north=true]
+m=minecraft:wall_torch[facing=east]
+n=minecraft:oak_door[hinge=right,facing=west]
+o=minecraft:chest[facing=south,type=right]
+p=minecraft:white_bed[facing=south]
+q=minecraft:white_bed[part=head,facing=south]
+r=minecraft:chest[facing=south,type=left]
+s=minecraft:crafting_table
+# .=<air>
+# *=<ignore>
+# _=<ground>

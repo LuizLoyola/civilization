@@ -35,7 +35,7 @@ public class CityCommand {
     }
 
     private static Integer executeStructureAdd(CommandContext<ServerCommandSource> ctx, City city) {
-        StructureType structureType = StructureType.fromString(StringArgumentType.getString(ctx, "structure_type"));
+        var structureType = StructureType.byName(StringArgumentType.getString(ctx, "structure_type"));
         if (structureType == null) {
             ctx.getSource().sendError(Text.of("Invalid structure type"));
             return 0;
@@ -49,52 +49,59 @@ public class CityCommand {
     private static int getCityAndExecute(CommandContext<ServerCommandSource> context, CityGetType type, Function<City, Integer> function) {
         var source = context.getSource();
 
-        City city = null;
-        BlockPos location = null;
-        String name = null;
+        try {
+            City city = null;
+            BlockPos location = null;
+            String name = null;
 
-        if (type == HERE) {
-            var player = getPlayer(context);
-            if (player == null) {
-                source.sendError(Text.of("You must be a player to execute this command."));
+            if (type == HERE) {
+                var player = getPlayer(context);
+                if (player == null) {
+                    source.sendError(Text.of("You must be a player to execute this command."));
+                    return 1;
+                }
+                location = player.getBlockPos();
+            }
+
+            if (type == AT) {
+                location = getBlockPos(context, "position");
+                if (location == null) {
+                    source.sendError(Text.of("Invalid position."));
+                    return 1;
+                }
+            }
+
+            if (type == NAMED) {
+                name = StringArgumentType.getString(context, "name");
+                if (name == null) {
+                    source.sendError(Text.of("Invalid name."));
+                    return 1;
+                }
+            }
+
+            var world = source.getWorld();
+            var cityManager = ((IServerWorldExt) world).getCityManager();
+
+            if (location != null) {
+                city = cityManager.getCityAt(location);
+            } else if (name != null) {
+                city = cityManager.getCity(name, false);
+            }
+
+            if (city == null) {
+                if (type == HERE) source.sendError(Text.of("No city here."));
+                if (type == AT) source.sendError(Text.of("No city at this position."));
+                if (type == NAMED) source.sendError(Text.of("No city named " + name + "."));
                 return 1;
             }
-            location = player.getBlockPos();
-        }
 
-        if (type == AT) {
-            location = getBlockPos(context, "position");
-            if (location == null) {
-                source.sendError(Text.of("Invalid position."));
-                return 1;
-            }
-        }
-
-        if (type == NAMED) {
-            name = StringArgumentType.getString(context, "name");
-            if (name == null) {
-                source.sendError(Text.of("Invalid name."));
-                return 1;
-            }
-        }
-
-        var world = source.getWorld();
-        var cityManager = ((IServerWorldExt) world).getCityManager();
-
-        if (location != null) {
-            city = cityManager.getCityAt(location);
-        } else if (name != null) {
-            city = cityManager.getCity(name, false);
-        }
-
-        if (city == null) {
-            if (type == HERE) source.sendError(Text.of("No city here."));
-            if (type == AT) source.sendError(Text.of("No city at this position."));
-            if (type == NAMED) source.sendError(Text.of("No city named " + name + "."));
+            return function.apply(city);
+        } catch (Exception e) {
+            source.sendError(Text.of("An error occurred."));
+            source.sendError(Text.of(e.getMessage()));
+            e.printStackTrace();
             return 1;
         }
-
-        return function.apply(city);
     }
 
     private static int executeDelete(CommandContext<ServerCommandSource> ctx, City city) {

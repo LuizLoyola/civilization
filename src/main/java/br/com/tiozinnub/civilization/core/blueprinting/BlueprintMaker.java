@@ -4,7 +4,9 @@ import br.com.tiozinnub.civilization.utils.CardinalDirection;
 import br.com.tiozinnub.civilization.utils.Constraints;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.Property;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -17,10 +19,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.blockPosString;
@@ -62,10 +61,6 @@ public class BlueprintMaker extends Serializable {
         return sb.toString();
     }
 
-    public static Blueprint readFromFile(String fileName) {
-        return null;
-    }
-
     public Box getBox() {
         if (this.firstPos == null) return null;
         if (this.secondPos == null) return new Box(firstPos, firstPos);
@@ -100,7 +95,7 @@ public class BlueprintMaker extends Serializable {
         } else {
             var blueprint = new BlueprintGenerator().generateBlueprint();
             var fileName = getFileName();
-            new BlueprintWriter().write(blueprint, fileName, false, false);
+            new Writer().write(blueprint, fileName, false, false);
             return Text.of("Saved blueprint to file: %s".formatted(fileName));
         }
     }
@@ -143,11 +138,11 @@ public class BlueprintMaker extends Serializable {
         }
     }
 
-    private static class BlueprintWriter {
+    private static class Writer {
         private final Map<Character, String> blockMap = new HashMap<>();
         private final String blockStateChars;
 
-        private BlueprintWriter() {
+        private Writer() {
             var sb = new StringBuilder();
             for (var c = 'a'; c <= 'z'; c++) sb.append(c);
             for (var c = 'A'; c <= 'Z'; c++) sb.append(c);
@@ -162,7 +157,12 @@ public class BlueprintMaker extends Serializable {
 
         private String serializeBlockState(BlockState state) {
             var sb = new StringBuilder();
-            sb.append(getBlockStateId(state));
+            var id = getBlockStateId(state);
+            if (id.getNamespace().equals("minecraft")) {
+                sb.append(id.getPath());
+            } else {
+                sb.append(id);
+            }
 
             var propMap = getPropMap(state);
             var defaultPropMap = getPropMap(state.getBlock().getDefaultState());
@@ -226,10 +226,8 @@ public class BlueprintMaker extends Serializable {
             sb.append(Constraints.MOD_NAME).append("\n");
             sb.append(Constraints.MOD_VERSION).append("\n");
             if (!suppressComments) {
-                sb.append(COMMENT).append("\n");
                 sb.append(COMMENT).append(" Blueprint file for Civilization mod by TiozinNub.").append("\n");
                 sb.append(COMMENT).append(" Generated using the blueprint item from within the game at ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append(".\n");
-                sb.append(COMMENT).append("\n");
             }
 
             // write the size
@@ -279,6 +277,110 @@ public class BlueprintMaker extends Serializable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static class Reader {
+        public Blueprint read(String fileName, String content) {
+            var lines = Arrays.stream(content.split("\n")).map(String::trim).filter(l -> !l.startsWith(String.valueOf(COMMENT))).toList();
+            var modName = lines.get(0);
+            var modVersion = lines.get(1);
+
+            if (!modName.equals(Constraints.MOD_NAME)) {
+                throw new IllegalArgumentException("Invalid mod name: " + modName);
+            }
+
+            if (!modVersion.equals(Constraints.MOD_VERSION)) {
+                // TODO: should have backwards compatibility
+                throw new IllegalArgumentException("Invalid mod version: " + modVersion);
+            }
+
+            var sizeSplit = lines.get(2).split(" ");
+            var lengthX = Integer.parseInt(sizeSplit[0]);
+            var lengthY = Integer.parseInt(sizeSplit[1]);
+            var lengthZ = Integer.parseInt(sizeSplit[2]);
+            var blueprint = new Blueprint(lengthX, lengthY, lengthZ);
+            blueprint.direction = CardinalDirection.byName(lines.get(3));
+
+            // start reading blocks
+            var blocks = new char[lengthX][lengthY][lengthZ];
+            var currLine = 4;
+            for (int y = lengthY - 1; y >= 0; y--) {
+                for (int x = 0; x < lengthX; x++) {
+                    var line = lines.get(currLine++);
+                    for (int z = 0; z < lengthZ; z++) {
+                        blocks[x][y][z] = line.charAt(z);
+                    }
+                }
+            }
+
+            // should be at the start of the block map
+            var blockMap = new HashMap<Character, BlockState>();
+
+            while (currLine < lines.size()) {
+                var line = lines.get(currLine++);
+                var c = line.charAt(0);
+                var blockStateStr = line.substring(2);
+                var identifierStr = blockStateStr.replaceAll("\\[.*", "");
+                var identifier = new Identifier(identifierStr);
+                var blockState = Registry.BLOCK.get(identifier).getDefaultState();
+
+                if (blockStateStr.contains("[")) {
+                    var propsStr = blockStateStr.substring(blockStateStr.indexOf("[") + 1, blockStateStr.indexOf("]"));
+                    var props = Arrays.stream(propsStr.split(",")).toList();
+                    for (var prop : props) {
+                        var split = prop.split("=");
+                        var propName = split[0];
+                        var propValue = split[1];
+
+                        var property = blockState.getBlock().getStateManager().getProperty(propName);
+                        if (property == null) {
+                            throw new IllegalArgumentException("Invalid property: " + propName);
+                        }
+                        blockState = blockStateWithProperty(blockState, property, propValue);
+                    }
+                }
+
+                blockMap.put(c, blockState);
+            }
+
+            // set the blocks
+            for (int x = 0; x < lengthX; x++) {
+                for (int y = 0; y < lengthY; y++) {
+                    for (int z = 0; z < lengthZ; z++) {
+                        var c = blocks[x][y][z];
+
+                        BlockState blockState;
+
+                        if (c == AIR) {
+                            blockState = Blocks.AIR.getDefaultState();
+                        } else if (c == IGNORE) {
+                            blockState = null;
+                        } else if (c == GROUND) {
+                            // TODO: treat differently
+                            blockState = null;
+                        } else {
+                            blockState = blockMap.get(c);
+                        }
+
+                        if (blockState == null) {
+                            throw new IllegalArgumentException("Invalid block state: " + c);
+                        }
+                        blueprint.blockStates[x][y][z] = blockState;
+                    }
+                }
+            }
+
+            return blueprint;
+        }
+
+        private <T extends Comparable<T>> BlockState blockStateWithProperty(BlockState blockState, Property<T> property, String value) {
+            var optional = property.parse(value);
+            if (optional.isEmpty()) {
+                throw new IllegalArgumentException("Invalid value for property: " + property.getName() + "=" + value);
+            }
+
+            return blockState.with(property, optional.get());
         }
     }
 }

@@ -38,9 +38,9 @@ public class PositionHelper {
 
     public static List<BlockPos> getAllPositions(Box box) {
         var list = new ArrayList<BlockPos>();
-        for (int x = (int) box.minX; x <= box.maxX; x++) {
-            for (int y = (int) box.minY; y <= box.maxY; y++) {
-                for (int z = (int) box.minZ; z <= box.maxZ; z++) {
+        for (int x = (int) box.minX; x < box.maxX; x++) {
+            for (int y = (int) box.minY; y < box.maxY; y++) {
+                for (int z = (int) box.minZ; z < box.maxZ; z++) {
                     list.add(new BlockPos(x, y, z));
                 }
             }

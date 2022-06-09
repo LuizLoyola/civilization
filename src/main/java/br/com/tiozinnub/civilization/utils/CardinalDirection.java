@@ -23,7 +23,7 @@ public enum CardinalDirection implements StringIdentifiable {
 
     @Nullable
     public static CardinalDirection byName(@Nullable String name) {
-        return Arrays.stream(values()).filter(direction -> direction.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+        return Arrays.stream(values()).filter(e -> e.asString().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
     public static CardinalDirection fromDirection(Direction side) {

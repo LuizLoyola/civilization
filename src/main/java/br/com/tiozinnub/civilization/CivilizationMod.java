@@ -1,6 +1,7 @@
 package br.com.tiozinnub.civilization;
 
 import br.com.tiozinnub.civilization.registry.*;
+import br.com.tiozinnub.civilization.resources.ResourceRegistry;
 import br.com.tiozinnub.civilization.utils.Constraints;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -15,6 +16,7 @@ public class CivilizationMod implements ModInitializer {
         BlockRegistry.register();
         BlockEntityRegistry.register();
         EntityRegistry.register();
+        ResourceRegistry.register();
 
         CommandRegistry.register();
     }

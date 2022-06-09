@@ -1,14 +1,16 @@
 package br.com.tiozinnub.civilization.core.structure;
 
 import net.minecraft.util.StringIdentifiable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
 public enum StructureType implements StringIdentifiable {
     HOUSE;
 
-    public static StructureType fromString(String string) {
-        return Arrays.stream(values()).filter(type -> type.asString().equals(string)).findFirst().orElse(null);
+    @Nullable
+    public static StructureType byName(@Nullable String name) {
+        return Arrays.stream(values()).filter(e -> e.asString().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
     @Override

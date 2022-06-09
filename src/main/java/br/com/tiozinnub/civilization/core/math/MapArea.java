@@ -171,9 +171,17 @@ public class MapArea extends Serializable implements Area {
     public String getMatrixString() {
         var sb = new StringBuilder();
 
+        if (this.height == 0 || this.width == 0) {
+            return null;
+        }
+
         for (var z = 0; z < this.height; z++) {
             for (var x = 0; x < this.width; x++) {
-                sb.append(this.matrix[x][z] ? '.' : ' ');
+                if (this.matrix.length > x && this.matrix[x].length > z) {
+                    sb.append(this.matrix[x][z] ? "." : " ");
+                } else {
+                    sb.append(" ");
+                }
             }
             sb.append('\n');
         }
@@ -182,6 +190,13 @@ public class MapArea extends Serializable implements Area {
     }
 
     private void fromMatrixString(String matrixString) {
+        if (matrixString == null || matrixString.equals("")) {
+            this.width = 0;
+            this.height = 0;
+            this.matrix = new boolean[0][0];
+            return;
+        }
+
         // check size
         var lines = Arrays.stream(matrixString.split("\n")).toList();
 
@@ -203,6 +218,9 @@ public class MapArea extends Serializable implements Area {
 
     @Override
     public boolean contains(int x, int z) {
+        if (this.width == 0 || this.height == 0) {
+            return false;
+        }
         return x >= this.x && x < this.x + this.width && z >= this.z && z < this.z + this.height && this.matrix[x - this.x][z - this.z];
     }
 
