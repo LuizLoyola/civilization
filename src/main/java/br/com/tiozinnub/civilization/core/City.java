@@ -1,29 +1,29 @@
 package br.com.tiozinnub.civilization.core;
 
 import br.com.tiozinnub.civilization.core.blueprinting.Blueprint;
-import br.com.tiozinnub.civilization.core.math.MapArea;
-import br.com.tiozinnub.civilization.core.math.Rectangle;
+import br.com.tiozinnub.civilization.core.math.Area2d;
+import br.com.tiozinnub.civilization.core.math.Pos2d;
 import br.com.tiozinnub.civilization.core.structure.StructureType;
 import br.com.tiozinnub.civilization.registry.BlueprintRegistry;
 import br.com.tiozinnub.civilization.utils.CardinalDirection;
 import br.com.tiozinnub.civilization.utils.Serializable;
+import br.com.tiozinnub.civilization.utils.helper.RandomHelper;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Direction;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
-import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.*;
+import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.firstBlockDown;
+import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getAllPositions;
 import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.pickOne;
 
 public class City extends Serializable {
     private final ServerWorld world;
-    private LayoutManager layoutManager;
+
+    private CityMap map;
     private BlockPos position;
     private UUID id;
     private String name;
@@ -38,7 +38,7 @@ public class City extends Serializable {
         this.id = UUID.randomUUID();
         this.position = pos;
         this.name = name;
-        this.layoutManager = new LayoutManager();
+        this.map = new CityMap();
     }
 
     public City(ServerWorld world, NbtCompound nbtCompound) {
@@ -66,7 +66,10 @@ public class City extends Serializable {
     }
 
     public List<ChunkPos> getChunks() {
-        return this.layoutManager.getChunks();
+        var chunks = this.map.getChunks();
+        var centerChunk = new ChunkPos(this.position);
+        if (chunks.contains(centerChunk)) chunks.add(centerChunk);
+        return chunks;
     }
 
     @Override
@@ -74,7 +77,7 @@ public class City extends Serializable {
         helper.registerProperty("id", this::getCityId, (value) -> this.id = value, UUID.randomUUID());
         helper.registerProperty("name", this::getName, (value) -> this.name = value, "");
         helper.registerProperty("position", this::getPosition, (value) -> this.position = value, new BlockPos(0, 0, 0));
-        helper.registerProperty("layoutManager", () -> this.layoutManager, (value) -> this.layoutManager = value, LayoutManager::new);
+        helper.registerProperty("map", () -> this.map, (value) -> this.map = value, CityMap::new);
     }
 
     public String getName() {
@@ -86,7 +89,11 @@ public class City extends Serializable {
     }
 
     public boolean isPosWithinCity(BlockPos pos) {
-        return this.layoutManager.isPosWithinCity(pos);
+        return this.map.isEmpty(Pos2d.from(pos));
+    }
+
+    public boolean isPosWithinCityChunks(BlockPos pos) {
+        return this.getChunks().contains(new ChunkPos(pos));
     }
 
     public void addStructure(StructureType structureType) {
@@ -97,31 +104,82 @@ public class City extends Serializable {
         var blueprint = BlueprintRegistry.getBlueprint(blueprintId);
 
         // get possible place
-        var place = this.layoutManager.findPlaceForStructure(blueprint, 2, 6);
-        if (place == null) throw new IllegalStateException("No place found for structure %s".formatted(structureType.asString()));
+        var width = blueprint.getLengthX();
+        var height = blueprint.getLengthZ();
+        var maxSteepness = Math.min(width, height) / 4; // arbitrary
 
-        var box = this.layoutManager.placeStructure(place);
+        var minDistance = 2;
+        var maxDistance = 15;
 
-        Direction.Axis axis;
+        var rnd = getWorld().getRandom();
+        for (var inflated = minDistance; inflated <= maxDistance; inflated++) {
+            var hasStructure = map.hasAny(CityMapTile.STRUCTURE);
+            if (hasStructure)
+                map.inflate(CityMapTile.STRUCTURE, inflated, true, CityMapTile.STRUCTURE_FINDER);
+            else
+                map.inflate(Pos2d.from(getPosition()), inflated, true, CityMapTile.STRUCTURE_FINDER);
 
-        var rnd = this.getWorld().getRandom();
+            var rectangles = map.findRectangles(width, height, CityMapTile.STRUCTURE_FINDER);
+            while (!rectangles.isEmpty()) {
+                var rectangle = rectangles.remove(rnd.nextInt(rectangles.size()));
 
-        if (blueprint.getLengthX() == place.getWidth()) {
-            axis = Direction.Axis.X;
-        } else if (blueprint.getLengthZ() == place.getWidth()) {
-            axis = Direction.Axis.Z;
-        } else {
-            // random
-            axis = pickOne(rnd, Direction.Axis.X, Direction.Axis.Z);
+                var yValues = rectangle.getAllPositions().stream().map(pos -> firstBlockDown(getWorld(), pos).getY()).toList();
+
+                //noinspection OptionalGetWithoutIsPresent
+                var minY = yValues.stream().min(Integer::compare).get();
+                var maxY = yValues.stream().max(Integer::compare).get();
+
+                var steepness = Math.abs(maxY - minY);
+                if (steepness > maxSteepness) {
+                    continue;
+                }
+
+                //noinspection OptionalGetWithoutIsPresent
+                var averageY = (int) Math.round(yValues.stream().mapToInt(Integer::intValue).average().getAsDouble());
+
+                var box = rectangle.getBox(averageY, averageY + blueprint.getLengthY());
+
+                var possibleDirections = EnumSet.noneOf(CardinalDirection.class);
+
+                var blueprintDir = blueprint.getDirection();
+
+                if (rectangle.getWidth() == width) {
+                    // same direction (or square), so add the correct direction and the opposite
+                    possibleDirections.add(blueprintDir);
+                    possibleDirections.add(blueprintDir.opposite());
+                }
+
+                if (rectangle.getWidth() == height) {
+                    // width == height (or square), so add the 2 turned directions
+                    possibleDirections.add(blueprintDir.right());
+                    possibleDirections.add(blueprintDir.left());
+                }
+
+                // get the center of the rectangle
+                var center = rectangle.getCenter();
+
+                // TODO: the direction should be based on the pathfinding algorithm later
+                var directions = center.getDirectionsTo(Pos2d.from(getPosition()));
+
+                var weigthIfOptimalDirection = 3;
+                var weightIfNotOptimalDirection = 1;
+
+                var weights = CardinalDirection.ALL.stream().map(d -> new RandomHelper.Weighted<>(d, directions.contains(d) ? weigthIfOptimalDirection : weightIfNotOptimalDirection)).toList();
+
+                var direction = pickOne(rnd, weights);
+
+                // looks ok, commit to it
+                this.map.remove(CityMapTile.STRUCTURE_FINDER);
+                this.map.set(rectangle, CityMapTile.STRUCTURE);
+
+                // TODO: add the structure to the map
+//                var structure = new Structure(this, box, rotatedBlueprint, direction);
+
+                this.buildBlueprintAt(blueprint, box, direction);
+                return;
+            }
         }
 
-        var direction = switch (axis) {
-            case X -> pickOne(rnd, CardinalDirection.EAST, CardinalDirection.WEST);
-            case Z -> pickOne(rnd, CardinalDirection.NORTH, CardinalDirection.SOUTH);
-            default -> throw new IllegalStateException("Unexpected value: " + axis);
-        };
-
-        this.buildBlueprintAt(blueprint, box, direction);
     }
 
     private void buildBlueprintAt(Blueprint blueprint, Box box, CardinalDirection direction) {
@@ -145,94 +203,14 @@ public class City extends Serializable {
         }
     }
 
-    private class LayoutManager extends Serializable {
-        private MapArea reservedArea;
+    public enum CityMapTile {
+        STRUCTURE_FINDER, STRUCTURE
 
-        public LayoutManager() {
-            this.reservedArea = new MapArea(position.getX(), position.getZ(), 0, 0);
-        }
+    }
 
-        public BlockPos getCityCenterPosition() {
-            return getPosition();
-        }
-
-        @Override
-        public void registerProperties(SerializableHelper helper) {
-            helper.registerProperty("reservedArea", () -> this.reservedArea, (value) -> this.reservedArea = value, MapArea::new);
-        }
-
-        public Rectangle findPlaceForStructure(Blueprint blueprint, int minDistance, int maxDistance) {
-            return findPlaceForStructure(blueprint.getLengthX(), blueprint.getLengthZ(), minDistance, maxDistance);
-        }
-
-        public Rectangle findPlaceForStructure(int width, int height, int minDistance, int maxDistance) {
-            var possibleArea = this.reservedArea.inflate(maxDistance).subtract(this.reservedArea.inflate(minDistance));
-            var possibleSpots = possibleArea.fitRectangle(width, height, true);
-            if (possibleSpots.size() == 0) {
-                return null;
-            }
-            return possibleSpots.get(world.getRandom().nextInt(possibleSpots.size()));
-        }
-
-        public Box placeStructure(Rectangle rectangle) {
-            var box = this.settleRectangle(rectangle);
-//            box = box.withMaxY(box.minY + 5);
-//            for (var pos : getAllPositions(box)) {
-//                world.setBlockState(pos, Blocks.STONE.getDefaultState());
-//            }
-
-            this.reservedArea = this.reservedArea.add(rectangle);
-
-            return box;
-        }
-
-        public Box settleRectangle(Rectangle rectangle) {
-            List<Integer> yValues = new ArrayList<>();
-
-            for (var x = rectangle.getLeft(); x < rectangle.getRight(); x++) {
-                for (var z = rectangle.getTop(); z < rectangle.getBottom(); z++) {
-                    var y = firstBlockDown(world, x, world.getTopY(), z).getY();
-                    yValues.add(y);
-                }
-            }
-
-            if (yValues.size() == 0) {
-                return null;
-            }
-
-            var minY = yValues.stream().min(Integer::compareTo).get();
-            var maxY = yValues.stream().max(Integer::compareTo).get();
-
-            var smallestSize = Math.min(rectangle.getWidth(), rectangle.getHeight());
-
-            if (maxY - minY > smallestSize / 3) {
-                throw new IllegalStateException("Area too steep");
-            }
-
-            var averageY = yValues.stream().mapToInt(Integer::intValue).average().orElse(0);
-
-            if (averageY == 0) return null;
-
-            ++averageY; // over the ground
-
-            return new Box(new BlockPos(rectangle.getLeft(), averageY, rectangle.getTop()), new BlockPos(rectangle.getRight(), averageY, rectangle.getBottom()));
-        }
-
-        public List<ChunkPos> getChunks() {
-            var chunkArea = this.reservedArea.add(new Rectangle(this.getCityCenterPosition())).getChunkArea();
-            var chunks = new ArrayList<ChunkPos>();
-            for (int x = chunkArea.getLeft(); x < chunkArea.getRight(); x++) {
-                for (int z = chunkArea.getTop(); z < chunkArea.getBottom(); z++) {
-                    if (chunkArea.contains(x, z)) {
-                        chunks.add(new ChunkPos(x, z));
-                    }
-                }
-            }
-            return chunks;
-        }
-
-        public boolean isPosWithinCity(BlockPos pos) {
-            return isPosWithin(pos, getChunks());
+    private static class CityMap extends Area2d<CityMapTile> {
+        protected CityMap() {
+            super(Map.ofEntries(new AbstractMap.SimpleEntry<>('s', CityMapTile.STRUCTURE), new AbstractMap.SimpleEntry<>('f', CityMapTile.STRUCTURE_FINDER)), CityMapTile.class);
         }
     }
 }

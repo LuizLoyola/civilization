@@ -6,6 +6,7 @@ import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 
 public enum CardinalDirection implements StringIdentifiable {
     NORTH("north", Direction.Axis.Z),
@@ -15,6 +16,12 @@ public enum CardinalDirection implements StringIdentifiable {
 
     private final String name;
     private final Direction.Axis axis;
+
+    public static final EnumSet<CardinalDirection> NORTH_EAST = EnumSet.of(NORTH, EAST);
+    public static final EnumSet<CardinalDirection> NORTH_WEST = EnumSet.of(NORTH, WEST);
+    public static final EnumSet<CardinalDirection> SOUTH_EAST = EnumSet.of(SOUTH, EAST);
+    public static final EnumSet<CardinalDirection> SOUTH_WEST = EnumSet.of(SOUTH, WEST);
+    public static final EnumSet<CardinalDirection> ALL = EnumSet.allOf(CardinalDirection.class);
 
     CardinalDirection(String name, Direction.Axis axis) {
         this.name = name;

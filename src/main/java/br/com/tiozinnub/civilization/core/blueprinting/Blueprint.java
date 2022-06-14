@@ -87,4 +87,8 @@ public class Blueprint {
 
         return blockStates[x][y][z];
     }
+
+    public CardinalDirection getDirection() {
+        return direction;
+    }
 }

@@ -1,5 +1,6 @@
 package br.com.tiozinnub.civilization.utils.helper;
 
+import br.com.tiozinnub.civilization.core.math.Pos2d;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
@@ -9,13 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PositionHelper {
-    public static BlockPos firstBlockDown(World world, int x, int y, int z) {
-        for (int i = y; i >= 0; i--) {
-            BlockPos pos = new BlockPos(x, i, z);
+    public static BlockPos firstBlockDown(World world, int x, int z) {
+        for (int y = world.getTopY(); y >= world.getBottomY(); y--) {
+            BlockPos pos = new BlockPos(x, y, z);
             if (world.getBlockState(pos).isAir()) continue;
             return pos;
         }
-        return new BlockPos(x, y, z);
+        return null;
+    }
+
+    public static BlockPos firstBlockDown(World world, Pos2d pos) {
+        return firstBlockDown(world, pos.x, pos.z);
     }
 
     public static boolean isPosWithin(BlockPos pos, ChunkPos chunk) {

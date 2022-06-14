@@ -96,7 +96,7 @@ public abstract class Serializable {
                     case INTEGER -> ((Consumer<Integer>) setter).accept(get(nbt, key, (Integer) this.defaultValues.get(key)));
                     case STRING -> ((Consumer<String>) setter).accept(get(nbt, key, (String) this.defaultValues.get(key)));
                     case BLOCK_POS -> ((Consumer<BlockPos>) setter).accept(get(nbt, key, (BlockPos) this.defaultValues.get(key)));
-                    case DIRECTION -> ((Consumer<Direction>) setter).<Direction>accept(get(nbt, key, (Direction) this.defaultValues.get(key), Direction::byName));
+                    case DIRECTION -> ((Consumer<Direction>) setter).accept(get(nbt, key, (Direction) this.defaultValues.get(key), Direction::byName));
                     case CARDINAL_DIRECTION ->
                             ((Consumer<CardinalDirection>) setter).accept(get(nbt, key, (CardinalDirection) this.defaultValues.get(key), CardinalDirection::byName));
                     case UUID -> ((Consumer<UUID>) setter).accept(get(nbt, key, (UUID) this.defaultValues.get(key)));
