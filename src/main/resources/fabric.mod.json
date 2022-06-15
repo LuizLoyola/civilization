@@ -5,13 +5,14 @@
   "name": "Civilization",
   "description": "Thriving cities!",
   "authors": [
-    "TiozinNub"
+    "TiozinNub",
+    "Milly104321"
   ],
   "contact": {
     "homepage": "https://civilization.tiozinnub.com.br/",
     "sources": "https://github.com/TiozinNub/civilization"
   },
-  "license": "CC0-1.0",
+  "license": "MIT",
   "icon": "assets/civilization/icon.png",
   "environment": "*",
   "entrypoints": {

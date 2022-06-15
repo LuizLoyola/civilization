@@ -55,48 +55,38 @@ public abstract class Area2d<EnumType extends Enum<EnumType>> extends Serializab
         return offsetZ + matrixHeight - 1;
     }
 
-    private String serializeMatrix() {
-        try {
-            if (matrix == null) return null;
-            if (matrixWidth == 0 || matrixHeight == 0) return null;
+    protected String serializeMatrix() {
+        if (matrix == null) return null;
+        if (matrixWidth == 0 || matrixHeight == 0) return null;
 
-            var sb = new StringBuilder();
-            for (var row = 0; row < matrixHeight; row++) {
-                for (var col = 0; col < matrixWidth; col++) {
-                    var c = matrix[row][col];
-                    if (c == EMPTY_CHAR) c = ' ';
-                    sb.append(c);
-                }
-
-                if (row < matrixHeight - 1) sb.append('\n');
+        var sb = new StringBuilder();
+        for (var row = 0; row < matrixHeight; row++) {
+            for (var col = 0; col < matrixWidth; col++) {
+                var c = matrix[row][col];
+                if (c == EMPTY_CHAR) c = ' ';
+                sb.append(c);
             }
-            return sb.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+
+            if (row < matrixHeight - 1) sb.append('\n');
         }
+        return sb.toString();
     }
 
     private void deserializeMatrix(String data) {
-        try {
+        if (data == null || data.isEmpty()) return;
 
-            if (data == null || data.isEmpty()) return;
+        var lines = data.split("\n");
+        matrixHeight = lines.length;
+        matrixWidth = lines[0].length();
+        matrix = new char[matrixHeight][matrixWidth];
 
-            var lines = data.split("\n");
-            matrixHeight = lines.length;
-            matrixWidth = lines[0].length();
-            matrix = new char[matrixHeight][matrixWidth];
-
-            for (var row = 0; row < matrixHeight; row++) {
-                var line = lines[row];
-                for (var col = 0; col < matrixWidth; col++) {
-                    var c = line.charAt(col);
-                    if (c == ' ') c = EMPTY_CHAR;
-                    matrix[row][col] = c;
-                }
+        for (var row = 0; row < matrixHeight; row++) {
+            var line = lines[row];
+            for (var col = 0; col < matrixWidth; col++) {
+                var c = line.charAt(col);
+                if (c == ' ') c = EMPTY_CHAR;
+                matrix[row][col] = c;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -249,7 +239,7 @@ public abstract class Area2d<EnumType extends Enum<EnumType>> extends Serializab
 
     public List<ChunkPos> getChunks() {
         var chunkSet = new HashSet<ChunkPos>();
-        getPositions().forEach(pos -> chunkSet.add(new ChunkPos(pos.x, pos.z)));
+        getPositions().forEach(pos -> chunkSet.add(new ChunkPos(pos.asBlockPos())));
         return chunkSet.stream().toList();
     }
 
@@ -291,19 +281,19 @@ public abstract class Area2d<EnumType extends Enum<EnumType>> extends Serializab
             lines = lines.subList(0, lines.size() - 1);
         }
 
-        while (lines.stream().allMatch(line -> line.charAt(0) == ' ')) {
+        while (!lines.isEmpty() && lines.stream().allMatch(line -> line.charAt(0) == ' ')) {
             lines = lines.stream().map(line -> line.substring(1)).toList();
             removedLeft++;
         }
 
-        while (lines.stream().allMatch(line -> line.charAt(line.length() - 1) == ' ')) {
+        while (!lines.isEmpty() && lines.stream().allMatch(line -> line.charAt(line.length() - 1) == ' ')) {
             lines = lines.stream().map(line -> line.substring(0, line.length() - 1)).toList();
         }
 
         var newText = String.join("\n", lines);
         deserializeMatrix(newText);
-        offsetX -= removedLeft;
-        offsetZ -= removedTop;
+        offsetX += removedLeft;
+        offsetZ += removedTop;
     }
 
     private void expandMatrixTo(int x, int z) {

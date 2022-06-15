@@ -79,7 +79,7 @@ public class CityManager extends PersistentState {
 
     public City getCityAt(BlockPos pos) {
         for (City city : this.cities.values()) {
-            if (city.isPosWithinCity(pos)) {
+            if (city.isPosWithinCityChunks(pos)) {
                 return city;
             }
         }

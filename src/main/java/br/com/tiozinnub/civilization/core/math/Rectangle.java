@@ -25,6 +25,14 @@ public class Rectangle {
         this.height = height;
     }
 
+    public static Rectangle fromCenter(Pos2d center, int width, int height) {
+        return new Rectangle(center.x - width / 2, center.z - height / 2, width, height);
+    }
+
+    public static Rectangle fromCenter(Pos2d center, int size) {
+        return fromCenter(center, size, size);
+    }
+
     public int getX() {
         return this.x;
     }
@@ -95,14 +103,6 @@ public class Rectangle {
         return positions;
     }
 
-    public static Rectangle fromCenter(Pos2d center, int width, int height) {
-        return new Rectangle(center.x - width / 2, center.z - height / 2, width, height);
-    }
-
-    public static Rectangle fromCenter(Pos2d center, int size) {
-        return fromCenter(center, size, size);
-    }
-
     public boolean isSquare() {
         return this.width == this.height;
     }
@@ -113,5 +113,10 @@ public class Rectangle {
 
     public Box getBox(int minY, int maxY) {
         return new Box(this.left(), minY, this.top(), this.right(), maxY, this.bottom());
+    }
+
+    @Override
+    public String toString() {
+        return "Rectangle{x=%d, z=%d, width=%d, height=%d}".formatted(x, z, width, height);
     }
 }

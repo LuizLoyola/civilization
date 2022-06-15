@@ -51,4 +51,12 @@ public class Pos2d {
             }
         }
     }
+
+    public BlockPos asBlockPos(int y) {
+        return new BlockPos(this.x, y, this.z);
+    }
+
+    public BlockPos asBlockPos() {
+        return asBlockPos(0);
+    }
 }

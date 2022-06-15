@@ -8,21 +8,26 @@ import br.com.tiozinnub.civilization.registry.BlueprintRegistry;
 import br.com.tiozinnub.civilization.utils.CardinalDirection;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import br.com.tiozinnub.civilization.utils.helper.RandomHelper;
+import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
 import java.util.*;
 
+import static br.com.tiozinnub.civilization.utils.helper.ParticleHelper.drawParticleBox;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.firstBlockDown;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getAllPositions;
 import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.pickOne;
 
 public class City extends Serializable {
     private final ServerWorld world;
-
+    private final Logger logger;
     private CityMap map;
     private BlockPos position;
     private UUID id;
@@ -31,6 +36,7 @@ public class City extends Serializable {
 
     private City(ServerWorld world) {
         this.world = world;
+        this.logger = LogUtils.getLogger();
     }
 
     public City(ServerWorld world, BlockPos pos, String name) {
@@ -51,6 +57,26 @@ public class City extends Serializable {
     }
 
     public void tick() {
+//        drawParticleBox(this.world, this.position, ParticleTypes.FLAME);
+
+        var chunks = getChunks();
+
+        if (chunks.isEmpty()) return;
+
+        var minX = Integer.MAX_VALUE;
+        var minZ = Integer.MAX_VALUE;
+        var maxX = Integer.MIN_VALUE;
+        var maxZ = Integer.MIN_VALUE;
+
+        for (var chunk : chunks) {
+            minX = Math.min(minX, chunk.getStartX());
+            minZ = Math.min(minZ, chunk.getStartZ());
+            maxX = Math.max(maxX, chunk.getEndX());
+            maxZ = Math.max(maxZ, chunk.getEndZ());
+        }
+
+        var box = new Box(minX, 0, minZ, maxX, 255, maxZ);
+        drawParticleBox(this.world, box, ParticleTypes.FLAME);
     }
 
     public UUID getCityId() {
@@ -68,7 +94,7 @@ public class City extends Serializable {
     public List<ChunkPos> getChunks() {
         var chunks = this.map.getChunks();
         var centerChunk = new ChunkPos(this.position);
-        if (chunks.contains(centerChunk)) chunks.add(centerChunk);
+        if (chunks.isEmpty()) chunks = List.of(centerChunk);
         return chunks;
     }
 
@@ -89,7 +115,7 @@ public class City extends Serializable {
     }
 
     public boolean isPosWithinCity(BlockPos pos) {
-        return this.map.isEmpty(Pos2d.from(pos));
+        return !this.map.isEmpty(Pos2d.from(pos));
     }
 
     public boolean isPosWithinCityChunks(BlockPos pos) {
@@ -97,6 +123,7 @@ public class City extends Serializable {
     }
 
     public void addStructure(StructureType structureType) {
+        logger.info("Adding structure {} to city {}", structureType.asString(), this.getName());
         var ids = BlueprintRegistry.getBlueprintIdsForStructure(structureType);
         // TODO: pick the correct one
 
@@ -108,20 +135,21 @@ public class City extends Serializable {
         var height = blueprint.getLengthZ();
         var maxSteepness = Math.min(width, height) / 4; // arbitrary
 
-        var minDistance = 2;
-        var maxDistance = 15;
+        var minDistance = Math.min(width, height) + 5;
+        var maxDistance = Math.max(width, height) + 5;
 
         var rnd = getWorld().getRandom();
         for (var inflated = minDistance; inflated <= maxDistance; inflated++) {
             var hasStructure = map.hasAny(CityMapTile.STRUCTURE);
-            if (hasStructure)
-                map.inflate(CityMapTile.STRUCTURE, inflated, true, CityMapTile.STRUCTURE_FINDER);
-            else
-                map.inflate(Pos2d.from(getPosition()), inflated, true, CityMapTile.STRUCTURE_FINDER);
+            if (hasStructure) map.inflate(CityMapTile.STRUCTURE, inflated, true, CityMapTile.STRUCTURE_FINDER);
+            else map.inflate(Pos2d.from(getPosition()), inflated, true, CityMapTile.STRUCTURE_FINDER);
 
             var rectangles = map.findRectangles(width, height, CityMapTile.STRUCTURE_FINDER);
+            this.map.remove(CityMapTile.STRUCTURE_FINDER);
+
             while (!rectangles.isEmpty()) {
                 var rectangle = rectangles.remove(rnd.nextInt(rectangles.size()));
+                logger.info("Found rectangle {}", rectangle);
 
                 var yValues = rectangle.getAllPositions().stream().map(pos -> firstBlockDown(getWorld(), pos).getY()).toList();
 
@@ -131,13 +159,17 @@ public class City extends Serializable {
 
                 var steepness = Math.abs(maxY - minY);
                 if (steepness > maxSteepness) {
+                    logger.info("Steepness {} is too high, skipping", steepness);
                     continue;
                 }
 
                 //noinspection OptionalGetWithoutIsPresent
-                var averageY = (int) Math.round(yValues.stream().mapToInt(Integer::intValue).average().getAsDouble());
+                var averageY = (int) Math.floor(yValues.stream().mapToInt(Integer::intValue).average().getAsDouble());
+                logger.info("Average Y is {}", averageY);
 
-                var box = rectangle.getBox(averageY, averageY + blueprint.getLengthY());
+                averageY++;
+
+                var box = rectangle.getBox(averageY, averageY + blueprint.getLengthY() - 1);
 
                 var possibleDirections = EnumSet.noneOf(CardinalDirection.class);
 
@@ -164,13 +196,13 @@ public class City extends Serializable {
                 var weigthIfOptimalDirection = 3;
                 var weightIfNotOptimalDirection = 1;
 
-                var weights = CardinalDirection.ALL.stream().map(d -> new RandomHelper.Weighted<>(d, directions.contains(d) ? weigthIfOptimalDirection : weightIfNotOptimalDirection)).toList();
+                var weights = possibleDirections.stream().map(d -> new RandomHelper.Weighted<>(d, directions.contains(d) ? weigthIfOptimalDirection : weightIfNotOptimalDirection)).toList();
 
                 var direction = pickOne(rnd, weights);
 
                 // looks ok, commit to it
-                this.map.remove(CityMapTile.STRUCTURE_FINDER);
                 this.map.set(rectangle, CityMapTile.STRUCTURE);
+                logger.info(map.toString());
 
                 // TODO: add the structure to the map
 //                var structure = new Structure(this, box, rotatedBlueprint, direction);
@@ -183,12 +215,12 @@ public class City extends Serializable {
     }
 
     private void buildBlueprintAt(Blueprint blueprint, Box box, CardinalDirection direction) {
+        logger.info("Building blueprint at {}", box);
         var b = blueprint.rotate(direction);
-        if (b.getLengthX() != box.getXLength() || b.getLengthZ() != box.getZLength()) {
+        if (b.getLengthX() != box.getXLength() + 1 || b.getLengthY() != box.getYLength() + 1 || b.getLengthZ() != box.getZLength() + 1) {
             throw new IllegalStateException("Blueprint size does not match place size");
         }
 
-        box = box.withMaxY(box.minY + b.getLengthY() - 1);
         var offset = new BlockPos(box.minX, box.minY, box.minZ);
 
         for (BlockPos pos : getAllPositions(box)) {
@@ -205,12 +237,27 @@ public class City extends Serializable {
 
     public enum CityMapTile {
         STRUCTURE_FINDER, STRUCTURE
-
     }
 
     private static class CityMap extends Area2d<CityMapTile> {
         protected CityMap() {
             super(Map.ofEntries(new AbstractMap.SimpleEntry<>('s', CityMapTile.STRUCTURE), new AbstractMap.SimpleEntry<>('f', CityMapTile.STRUCTURE_FINDER)), CityMapTile.class);
+        }
+
+        @Override
+        public String toString() {
+            var sb = new StringBuilder();
+            var lines = Arrays.stream(serializeMatrix().split("\n")).toList();
+            if (lines.size() > 0) {
+                var width = lines.get(0).length();
+                sb.append("|").append(StringUtils.repeat("-", width)).append("|\n");
+                for (var line : lines) {
+                    sb.append("|").append(line).append("|\n");
+                }
+                sb.append("|").append(StringUtils.repeat("-", width)).append("|\n");
+            }
+
+            return "Area at %d %d:\n%s".formatted(getOffsetX(), getOffsetZ(), sb.toString());
         }
     }
 }
