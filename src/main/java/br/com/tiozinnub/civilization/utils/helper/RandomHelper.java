@@ -49,6 +49,10 @@ public class RandomHelper {
         return random.nextDouble() < chance;
     }
 
+    public static boolean flipACoin(Random random) {
+        return random.nextBoolean();
+    }
+
     public record Weighted<T>(T item, int weight) {
         public static <T> Weighted<T> of(T item, int weight) {
             return new Weighted<>(item, weight);

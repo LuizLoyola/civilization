@@ -147,37 +147,65 @@ public abstract class Area2d<EnumType extends Enum<EnumType>> extends Serializab
     }
 
     public void inflate(EnumType value, int amount, boolean onlyEmpty) {
-        inflate(value, amount, onlyEmpty, value);
+        inflate(value, amount, amount, onlyEmpty);
+    }
+
+    public void inflate(EnumType value, int amountX, int amountZ, boolean onlyEmpty) {
+        inflate(value, amountX, amountZ, onlyEmpty, value);
     }
 
     public void inflate(EnumType value, int amount, boolean onlyEmpty, EnumType inflateWith) {
-        inflate(EnumSet.of(value), amount, onlyEmpty ? EnumSet.noneOf(enumTypeClass) : EnumSet.allOf(enumTypeClass), true, inflateWith);
+        inflate(value, amount, amount, onlyEmpty, inflateWith);
+    }
+
+    public void inflate(EnumType value, int amountX, int amountZ, boolean onlyEmpty, EnumType inflateWith) {
+        inflate(EnumSet.of(value), amountX, amountZ, onlyEmpty ? EnumSet.noneOf(enumTypeClass) : EnumSet.allOf(enumTypeClass), true, inflateWith);
     }
 
     public void inflate(Pos2d pos, int amount, boolean onlyEmpty, EnumType inflateWith) {
-        inflate(List.of(pos), amount, onlyEmpty ? EnumSet.noneOf(enumTypeClass) : EnumSet.allOf(enumTypeClass), true, inflateWith);
+        inflate(pos, amount, amount, onlyEmpty, inflateWith);
+    }
+
+    public void inflate(Pos2d pos, int amountX, int amountZ, boolean onlyEmpty, EnumType inflateWith) {
+        inflate(List.of(pos), amountX, amountZ, onlyEmpty ? EnumSet.noneOf(enumTypeClass) : EnumSet.allOf(enumTypeClass), true, inflateWith);
     }
 
     public void inflate(EnumType valueToInflate, int amount, EnumSet<EnumType> overwriteWhiteList, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
-        inflate(EnumSet.of(valueToInflate), amount, overwriteWhiteList, includeEmptyOnWhitelist, inflateWith);
+        inflate(valueToInflate, amount, amount, overwriteWhiteList, includeEmptyOnWhitelist, inflateWith);
+    }
+
+    public void inflate(EnumType valueToInflate, int amountX, int amountZ, EnumSet<EnumType> overwriteWhiteList, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
+        inflate(EnumSet.of(valueToInflate), amountX, amountZ, overwriteWhiteList, includeEmptyOnWhitelist, inflateWith);
     }
 
     public void inflate(EnumSet<EnumType> valuesToInflate, int amount, EnumType overwriteOnly, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
-        inflate(valuesToInflate, amount, EnumSet.of(overwriteOnly), includeEmptyOnWhitelist, inflateWith);
+        inflate(valuesToInflate, amount, amount, overwriteOnly, includeEmptyOnWhitelist, inflateWith);
+    }
+
+    public void inflate(EnumSet<EnumType> valuesToInflate, int amountX, int amountZ, EnumType overwriteOnly, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
+        inflate(valuesToInflate, amountX, amountZ, EnumSet.of(overwriteOnly), includeEmptyOnWhitelist, inflateWith);
     }
 
     public void inflate(EnumSet<EnumType> valuesToInflate, int amount, EnumSet<EnumType> overwriteWhitelist, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
-        inflate(getPositionsWith(valuesToInflate), amount, overwriteWhitelist, includeEmptyOnWhitelist, inflateWith);
+        inflate(valuesToInflate, amount, amount, overwriteWhitelist, includeEmptyOnWhitelist, inflateWith);
+    }
+
+    public void inflate(EnumSet<EnumType> valuesToInflate, int amountX, int amountZ, EnumSet<EnumType> overwriteWhitelist, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
+        inflate(getPositionsWith(valuesToInflate), amountX, amountZ, overwriteWhitelist, includeEmptyOnWhitelist, inflateWith);
     }
 
     private void inflate(List<Pos2d> positions, int amount, EnumSet<EnumType> overwriteWhitelist, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
-        if (amount <= 0) return;
+        inflate(positions, amount, amount, overwriteWhitelist, includeEmptyOnWhitelist, inflateWith);
+    }
+
+    private void inflate(List<Pos2d> positions, int amountX, int amountZ, EnumSet<EnumType> overwriteWhitelist, boolean includeEmptyOnWhitelist, EnumType inflateWith) {
+        if (amountX <= 0 && amountZ <= 0) return;
 
         var positionsToSet = new ArrayList<Pos2d>();
 
         for (var position : positions) {
-            for (var zOffset = -amount; zOffset <= amount; zOffset++) {
-                for (var xOffset = -amount; xOffset <= amount; xOffset++) {
+            for (var zOffset = -amountZ; zOffset <= amountZ; zOffset++) {
+                for (var xOffset = -amountX; xOffset <= amountX; xOffset++) {
                     var x = position.x + xOffset;
                     var z = position.z + zOffset;
                     var value = get(x, z);
@@ -339,29 +367,16 @@ public abstract class Area2d<EnumType extends Enum<EnumType>> extends Serializab
     }
 
     public List<Rectangle> findRectangles(int width, int height, EnumType value) {
-        return findRectangles(width, height, EnumSet.of(value), true);
-    }
-
-    public List<Rectangle> findRectangles(int width, int height, EnumType value, boolean mayRotate) {
-        return findRectangles(width, height, EnumSet.of(value), mayRotate);
+        return findRectangles(width, height, EnumSet.of(value));
     }
 
     public List<Rectangle> findRectangles(int width, int height, EnumSet<EnumType> values) {
-        return findRectangles(width, height, values, true);
-    }
-
-    public List<Rectangle> findRectangles(int width, int height, EnumSet<EnumType> values, boolean mayRotate) {
         var rectangles = new ArrayList<Rectangle>();
         var positions = getPositionsWith(values);
         for (var pos : positions) {
             var rect = new Rectangle(pos.x, pos.z, width, height);
             if (rect.getAllPositions().stream().allMatch(pos2 -> values.contains(get(pos2))))
                 rectangles.add(rect);
-        }
-
-        if (mayRotate && width != height) {
-            //noinspection SuspiciousNameCombination
-            rectangles.addAll(findRectangles(height, width, values, false));
         }
 
         return rectangles;

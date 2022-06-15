@@ -23,6 +23,7 @@ import java.util.*;
 import static br.com.tiozinnub.civilization.utils.helper.ParticleHelper.drawParticleBox;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.firstBlockDown;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getAllPositions;
+import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.flipACoin;
 import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.pickOne;
 
 public class City extends Serializable {
@@ -135,17 +136,30 @@ public class City extends Serializable {
         var height = blueprint.getLengthZ();
         var maxSteepness = Math.min(width, height) / 4; // arbitrary
 
-        var minDistance = Math.min(width, height) + 5;
-        var maxDistance = Math.max(width, height) + 5;
+        var minDistance = 5;
+        var maxDistance = 15;
 
         var rnd = getWorld().getRandom();
-        for (var inflated = minDistance; inflated <= maxDistance; inflated++) {
-            var hasStructure = map.hasAny(CityMapTile.STRUCTURE);
-            if (hasStructure) map.inflate(CityMapTile.STRUCTURE, inflated, true, CityMapTile.STRUCTURE_FINDER);
-            else map.inflate(Pos2d.from(getPosition()), inflated, true, CityMapTile.STRUCTURE_FINDER);
+        for (var margin = minDistance; margin <= maxDistance; margin++) {
+            var w = width;
+            var h = height;
 
-            var rectangles = map.findRectangles(width, height, CityMapTile.STRUCTURE_FINDER);
-            this.map.remove(CityMapTile.STRUCTURE_FINDER);
+            if (h != w && flipACoin(rnd)) {
+                w = height;
+                h = width;
+            }
+
+            var hasStructure = map.hasAny(CityMapTile.STRUCTURE);
+            if (hasStructure) {
+                map.inflate(CityMapTile.STRUCTURE, margin, true, CityMapTile.STRUCTURE_FINDER_2);
+                map.inflate(CityMapTile.STRUCTURE_FINDER_2, width, height, true, CityMapTile.STRUCTURE_FINDER_1);
+                map.remove(CityMapTile.STRUCTURE_FINDER_2);
+            } else {
+                map.inflate(Pos2d.from(getPosition()), width + margin, height + margin, true, CityMapTile.STRUCTURE_FINDER_1);
+            }
+
+            var rectangles = map.findRectangles(w, h, CityMapTile.STRUCTURE_FINDER_1);
+            this.map.remove(CityMapTile.STRUCTURE_FINDER_1);
 
             while (!rectangles.isEmpty()) {
                 var rectangle = rectangles.remove(rnd.nextInt(rectangles.size()));
@@ -202,7 +216,6 @@ public class City extends Serializable {
 
                 // looks ok, commit to it
                 this.map.set(rectangle, CityMapTile.STRUCTURE);
-                logger.info(map.toString());
 
                 // TODO: add the structure to the map
 //                var structure = new Structure(this, box, rotatedBlueprint, direction);
@@ -210,12 +223,14 @@ public class City extends Serializable {
                 this.buildBlueprintAt(blueprint, box, direction);
                 return;
             }
+
+            logger.info("No rectangle found, trying again");
         }
 
     }
 
     private void buildBlueprintAt(Blueprint blueprint, Box box, CardinalDirection direction) {
-        logger.info("Building blueprint at {}", box);
+        logger.info("Building blueprint at {}, pointing {}", box, direction);
         var b = blueprint.rotate(direction);
         if (b.getLengthX() != box.getXLength() + 1 || b.getLengthY() != box.getYLength() + 1 || b.getLengthZ() != box.getZLength() + 1) {
             throw new IllegalStateException("Blueprint size does not match place size");
@@ -236,12 +251,12 @@ public class City extends Serializable {
     }
 
     public enum CityMapTile {
-        STRUCTURE_FINDER, STRUCTURE
+        STRUCTURE_FINDER_1, STRUCTURE_FINDER_2, STRUCTURE
     }
 
     private static class CityMap extends Area2d<CityMapTile> {
         protected CityMap() {
-            super(Map.ofEntries(new AbstractMap.SimpleEntry<>('s', CityMapTile.STRUCTURE), new AbstractMap.SimpleEntry<>('f', CityMapTile.STRUCTURE_FINDER)), CityMapTile.class);
+            super(Map.of('#', CityMapTile.STRUCTURE, ',', CityMapTile.STRUCTURE_FINDER_1, '.', CityMapTile.STRUCTURE_FINDER_2), CityMapTile.class);
         }
 
         @Override
