@@ -58,6 +58,7 @@ public class PositionHelper {
     }
 
     public static String blockPosString(BlockPos pos, boolean brackets) {
+        if (pos == null) return "null";
         var sb = new StringBuilder();
         if (brackets) sb.append("[");
         sb.append(pos.getX()).append(",").append(pos.getY()).append(",").append(pos.getZ());

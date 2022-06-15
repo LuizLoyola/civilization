@@ -1,5 +1,7 @@
 package br.com.tiozinnub.civilization.core.blueprinting;
 
+import br.com.tiozinnub.civilization.core.structure.StructureType;
+import br.com.tiozinnub.civilization.registry.BlueprintRegistry;
 import br.com.tiozinnub.civilization.utils.CardinalDirection;
 import br.com.tiozinnub.civilization.utils.Constraints;
 import br.com.tiozinnub.civilization.utils.Serializable;
@@ -8,12 +10,12 @@ import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Property;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static br.com.tiozinnub.civilization.utils.helper.BlueprintHelper.instaBuildBlueprint;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.blockPosString;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getAllPositions;
 
@@ -32,15 +35,18 @@ public class BlueprintMaker extends Serializable {
     private static final Character GROUND = '_';
     private static final Character DIRECTION = '>';
     private final ServerWorld world;
+    public boolean loadMode;
     private BlockPos firstPos;
     private BlockPos secondPos;
     private CardinalDirection direction;
+    private StructureType loadStructureType;
+    private int blueprintIndex;
 
     public BlueprintMaker(ServerWorld world) {
         this.world = world;
     }
 
-    private static String getFileName() {
+    private static String getFileName(StructureType structureType) {
         // blueprint folder on current user's desktop
         var sb = new StringBuilder();
         sb.append(System.getProperty("user.home"));
@@ -56,7 +62,9 @@ public class BlueprintMaker extends Serializable {
         }
 
         sb.append(File.separator);
-        sb.append(System.currentTimeMillis());
+        sb.append(structureType.asString());
+        sb.append("-");
+        sb.append(new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date()));
         sb.append(".blueprint");
         return sb.toString();
     }
@@ -67,37 +75,100 @@ public class BlueprintMaker extends Serializable {
         return new Box(firstPos, secondPos);
     }
 
-    public CardinalDirection getDirection() {
-        return direction;
-    }
-
     @Override
     public void registerProperties(SerializableHelper helper) {
         helper.registerProperty("firstPos", () -> this.firstPos, (value) -> this.firstPos = value, null);
         helper.registerProperty("secondPos", () -> this.secondPos, (value) -> this.secondPos = value, null);
         helper.registerProperty("direction", () -> this.direction, (value) -> this.direction = value, null);
+        helper.registerProperty("loadMode", () -> this.loadMode, (value) -> this.loadMode = value, false);
+        helper.registerProperty("loadStructureType", () -> this.loadStructureType.asString(), (value) -> this.loadStructureType = StructureType.byName(value), null);
+        helper.registerProperty("blueprintIndex", () -> this.blueprintIndex, (value) -> this.blueprintIndex = value, 0);
     }
 
-    public Text usedOnBlock(World world, BlockPos blockPos, Direction side, boolean sneaking) {
-        if (this.firstPos == null) {
-            this.firstPos = blockPos;
-            return Text.of("First position: %s. Now set the second position.".formatted(blockPosString(blockPos)));
-        } else if (this.secondPos == null) {
-            this.secondPos = blockPos;
-            return Text.of("Second position: %s. Now set the direction.".formatted(blockPosString(blockPos)));
-        } else if (this.direction == null) {
-            this.direction = CardinalDirection.fromDirection(side);
-            if (this.direction == null) {
-                return Text.of("You clicked the %s side of the block. Click again to set the direction.".formatted(side.getName()));
+    public Text usedOnBlock(ServerWorld world, BlockPos blockPos, Direction side, boolean sneaking) {
+        if (!loadMode) {
+            if (this.firstPos == null) {
+                this.firstPos = blockPos;
+                return Text.of("First position: %s. Now set the second position.".formatted(blockPosString(blockPos)));
+            } else if (this.secondPos == null) {
+                this.secondPos = blockPos;
+                return Text.of("Second position: %s. Now set the direction.".formatted(blockPosString(blockPos)));
+            } else if (this.direction == null) {
+                this.direction = CardinalDirection.fromDirection(side);
+                if (this.direction == null) {
+                    return Text.of("You clicked the %s side of the block. Click again to set the direction.".formatted(side.getName()));
+                }
+                return Text.of("Structure is facing %s.".formatted(this.direction.getName()));
             }
 
-            return Text.of("Structure is facing %s. Click again to save.".formatted(this.direction.getName()));
-        } else {
-            var blueprint = new BlueprintGenerator().generateBlueprint();
-            var fileName = getFileName();
-            new Writer().write(blueprint, fileName, false, false);
-            return Text.of("Saved blueprint to file: %s".formatted(fileName));
+            return Text.of("Blueprint complete. Use command %s/civilization blueprint%s for more info".formatted(Formatting.BLUE, Formatting.RESET));
         }
+
+        if (sneaking) {
+            this.firstPos = null;
+            this.secondPos = null;
+            this.direction = null;
+            blueprintIndex++;
+            return Text.of("%s".formatted(getBlueprintIdForLoadMode()));
+        }
+
+        // load mode
+
+        var blueprint = getBlueprintForLoadMode();
+
+        if (this.firstPos == null) {
+            this.firstPos = blockPos;
+            return Text.of("Position set: %s. Now set the second position to make a %dx%d area.".formatted(blockPosString(blockPos), blueprint.getLengthX(), blueprint.getLengthZ()));
+        }
+
+        if (this.secondPos == null) {
+            this.secondPos = blockPos;
+        } else if (this.direction == null) {
+            this.direction = CardinalDirection.fromDirection(side);
+        }
+
+        var box = new Box(firstPos, secondPos);
+        box = box.withMinY(firstPos.getY()).withMaxY(firstPos.getY() + blueprint.getLengthY() - 1);
+
+        var directions = EnumSet.noneOf(CardinalDirection.class);
+
+        var boxXLength = box.maxX - box.minX + 1;
+        var boxZLength = box.maxZ - box.minZ + 1;
+
+        if (boxXLength == blueprint.getLengthX() && boxZLength == blueprint.getLengthZ()) {
+            directions.add(blueprint.direction);
+            directions.add(blueprint.direction.opposite());
+        }
+        if (boxXLength == blueprint.getLengthZ() && boxZLength == blueprint.getLengthX()) {
+            directions.add(blueprint.direction.right());
+            directions.add(blueprint.direction.left());
+        }
+
+        if (this.direction == null) {
+            if (directions.isEmpty()) {
+                this.secondPos = null;
+                return Text.of("Invalid second position. Must make a %dx%d area (this one is %.0fx%.0f).".formatted(blueprint.getLengthX(), blueprint.getLengthZ(), boxXLength, boxZLength));
+            }
+
+            this.firstPos = new BlockPos(box.minX, box.minY, box.minZ);
+            this.secondPos = new BlockPos(box.maxX, box.maxY, box.maxZ);
+
+            return Text.of("Now set the direction to one of the following: %s".formatted(directions.stream().map(CardinalDirection::getName).collect(Collectors.joining(", "))));
+        }
+
+        if (!directions.contains(this.direction)) {
+            this.direction = null;
+            return Text.of("Invalid direction. Must be one of the following: %s".formatted(directions.stream().map(CardinalDirection::getName).collect(Collectors.joining(", "))));
+        }
+
+        instaBuildBlueprint(world, blueprint, box, direction);
+        var d = direction.getName();
+
+        this.firstPos = null;
+        this.secondPos = null;
+        this.direction = null;
+
+        return Text.of("Blueprint built facing %s.".formatted(d));
     }
 
     public Text usedOnAir(ServerWorld world, boolean sneaking) {
@@ -116,27 +187,51 @@ public class BlueprintMaker extends Serializable {
         this.direction = null;
     }
 
-    private class BlueprintGenerator {
-
-        public BlueprintGenerator() {
-        }
-
-        public Blueprint generateBlueprint() {
-            var box = getBox();
-            var blueprint = new Blueprint((int) box.getXLength() + 1, (int) box.getYLength() + 1, (int) box.getZLength() + 1);
-            blueprint.direction = direction;
-
-            var allPos = getAllPositions(box);
-            var min = new BlockPos(box.minX, box.minY, box.minZ);
-            for (var pos : allPos) {
-                var block = world.getBlockState(pos);
-                var offset = pos.subtract(min);
-                blueprint.blockStates[offset.getX()][offset.getY()][offset.getZ()] = block;
-            }
-
-            return blueprint;
-        }
+    public boolean isIncomplete() {
+        return this.firstPos == null || this.secondPos == null || this.direction == null;
     }
+
+    public BlockPos getFirstPos() {
+        return firstPos;
+    }
+
+    public BlockPos getSecondPos() {
+        return secondPos;
+    }
+
+    public CardinalDirection getDirection() {
+        return direction;
+    }
+
+    public String saveToFile(StructureType structureType) {
+        var blueprint = new BlueprintGenerator().generateBlueprint();
+        var fileName = getFileName(structureType);
+        new Writer().write(blueprint, fileName, false, false);
+        return fileName;
+    }
+
+    public void setLoadMode(StructureType structureType) {
+        this.loadMode = true;
+        this.loadStructureType = structureType;
+        this.blueprintIndex = 0;
+    }
+
+    private Identifier getBlueprintIdForLoadMode() {
+        var list = BlueprintRegistry.getBlueprintIdsForStructure(this.loadStructureType);
+        if (blueprintIndex >= list.size()) {
+            blueprintIndex = list.size() - 1;
+            ;
+        }
+
+        if (list.isEmpty()) return null;
+
+        return list.get(blueprintIndex);
+    }
+
+    private Blueprint getBlueprintForLoadMode() {
+        return BlueprintRegistry.getBlueprint(getBlueprintIdForLoadMode());
+    }
+
 
     private static class Writer {
         private final Map<Character, String> blockMap = new HashMap<>();
@@ -218,7 +313,7 @@ public class BlueprintMaker extends Serializable {
 
         public void write(Blueprint blueprint, String fileName, boolean suppressComments, boolean alignNorth) {
             if (alignNorth) {
-                write(blueprint.rotate(CardinalDirection.NORTH), fileName, suppressComments, false);
+                write(blueprint.rotate(CardinalDirection.NORTH, false), fileName, suppressComments, false);
                 return;
             }
 
@@ -381,6 +476,28 @@ public class BlueprintMaker extends Serializable {
             }
 
             return blockState.with(property, optional.get());
+        }
+    }
+
+    private class BlueprintGenerator {
+
+        public BlueprintGenerator() {
+        }
+
+        public Blueprint generateBlueprint() {
+            var box = getBox();
+            var blueprint = new Blueprint((int) box.getXLength() + 1, (int) box.getYLength() + 1, (int) box.getZLength() + 1);
+            blueprint.direction = direction;
+
+            var allPos = getAllPositions(box);
+            var min = new BlockPos(box.minX, box.minY, box.minZ);
+            for (var pos : allPos) {
+                var block = world.getBlockState(pos);
+                var offset = pos.subtract(min);
+                blueprint.blockStates[offset.getX()][offset.getY()][offset.getZ()] = block;
+            }
+
+            return blueprint;
         }
     }
 }

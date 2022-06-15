@@ -4,8 +4,11 @@ import br.com.tiozinnub.civilization.utils.CardinalDirection;
 import net.minecraft.block.BlockState;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+
+import java.util.List;
 
 public class Blueprint {
     private final int lengthX;
@@ -33,29 +36,48 @@ public class Blueprint {
         return lengthZ;
     }
 
-    public Blueprint rotate(CardinalDirection direction) {
-        var blueprint = this;
-        while (blueprint.direction != direction) {
-            blueprint = blueprint.rotateRight();
-        }
-        return blueprint;
-    }
+    public Blueprint rotate(CardinalDirection direction, boolean mirror) {
+        var newX = direction == this.direction || direction == this.direction.opposite() ? lengthX : lengthZ;
+        var newZ = direction == this.direction || direction == this.direction.opposite() ? lengthZ : lengthX;
 
-    private Blueprint rotateRight() {
-        var blueprint = new Blueprint(lengthZ, lengthY, lengthX);
-        blueprint.direction = direction.right();
-        for (var x = 0; x < blueprint.lengthX; x++) {
-            for (var y = 0; y < blueprint.lengthY; y++) {
-                for (var z = 0; z < blueprint.lengthZ; z++) {
-                    blueprint.blockStates[x][y][z] = rotateBlockStateRight(blockStates[z][y][x]);
+        var right = direction == this.direction.right();
+        var left = direction == this.direction.left();
+        var opposite = direction == this.direction.opposite();
+
+        var newBlueprint = new Blueprint(newX, lengthY, newZ);
+
+        for (var x = 0; x < newX; x++) {
+            for (var y = 0; y < lengthY; y++) {
+                for (var z = 0; z < newZ; z++) {
+                    int xx = mirror ? newX - x - 1 : x;
+
+                    BlockState b;
+
+                    if (right) {
+                        b = blockStates[z][y][newX - xx - 1];
+                    } else if (left) {
+                        b = blockStates[newZ - z - 1][y][xx];
+                    } else if (opposite) {
+                        b = blockStates[newX - xx - 1][y][newZ - z - 1];
+                    } else {
+                        b = blockStates[xx][y][z];
+                    }
+
+                    newBlueprint.blockStates[x][y][z] = rotateBlock(b, direction, mirror);
                 }
             }
         }
-        return blueprint;
+
+
+        return newBlueprint;
     }
 
-    @SuppressWarnings("unchecked")
-    private static BlockState rotateBlockStateRight(BlockState blockState) {
+    private BlockState rotateBlock(BlockState blockState, CardinalDirection direction, boolean mirror) {
+        if (direction == this.direction && !mirror) return blockState;
+        var right = direction == this.direction.right();
+        var left = direction == this.direction.left();
+        var opposite = direction == this.direction.opposite();
+
         var properties = blockState.getProperties();
         for (var property : properties) {
             switch (property.getName()) {
@@ -63,16 +85,55 @@ public class Blueprint {
                     var facingProperty = (DirectionProperty) property;
                     var facing = blockState.get(facingProperty);
                     if (facing.getAxis() == Direction.Axis.Y) continue;
-                    blockState = blockState.with(facingProperty, facing.rotateYClockwise());
+                    if (right) facing = facing.rotateYClockwise();
+                    if (left) facing = facing.rotateYCounterclockwise();
+                    if (opposite) facing = facing.getOpposite();
+                    blockState = blockState.with(facingProperty, facing);
                 }
                 case "axis" -> {
+                    //noinspection unchecked
                     var axisProperty = (EnumProperty<Direction.Axis>) property;
                     var axis = blockState.get(axisProperty);
                     if (axis == Direction.Axis.Y) continue;
-                    blockState = blockState.with(axisProperty, axis == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
+                    if (right || left) axis = axis == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X;
+                    blockState = blockState.with(axisProperty, axis);
                 }
             }
         }
+
+        // check for north, south, east, west properties
+        if (properties.containsAll(List.of(Properties.NORTH, Properties.SOUTH, Properties.EAST, Properties.WEST))) {
+            var north = blockState.get(Properties.NORTH);
+            var south = blockState.get(Properties.SOUTH);
+            var east = blockState.get(Properties.EAST);
+            var west = blockState.get(Properties.WEST);
+
+            if (right) {
+                var n = north;
+                north = west;
+                west = south;
+                south = east;
+                east = n;
+            }
+            if (left) {
+                var n = north;
+                north = east;
+                east = south;
+                south = west;
+                west = n;
+            }
+            if (opposite) {
+                var n = north;
+                north = south;
+                south = n;
+                var e = east;
+                east = west;
+                west = e;
+            }
+
+            blockState = blockState.with(Properties.NORTH, north).with(Properties.SOUTH, south).with(Properties.EAST, east).with(Properties.WEST, west);
+        }
+
         return blockState;
     }
 

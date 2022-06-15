@@ -15,6 +15,7 @@ public class CivilizationCommand {
         dispatcher.register(literal("civilization")
                 .executes(CivilizationCommand::executeVersion)
                 .then(literal("version").executes(CivilizationCommand::executeVersion))
+                .then(BlueprintCommand.register())
                 .then(CityCommand.register())
         );
     }

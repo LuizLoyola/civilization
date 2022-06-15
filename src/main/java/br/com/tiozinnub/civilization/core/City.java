@@ -1,6 +1,5 @@
 package br.com.tiozinnub.civilization.core;
 
-import br.com.tiozinnub.civilization.core.blueprinting.Blueprint;
 import br.com.tiozinnub.civilization.core.math.Area2d;
 import br.com.tiozinnub.civilization.core.math.Pos2d;
 import br.com.tiozinnub.civilization.core.structure.StructureType;
@@ -20,9 +19,9 @@ import org.slf4j.Logger;
 
 import java.util.*;
 
+import static br.com.tiozinnub.civilization.utils.helper.BlueprintHelper.instaBuildBlueprint;
 import static br.com.tiozinnub.civilization.utils.helper.ParticleHelper.drawParticleBox;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.firstBlockDown;
-import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getAllPositions;
 import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.flipACoin;
 import static br.com.tiozinnub.civilization.utils.helper.RandomHelper.pickOne;
 
@@ -79,7 +78,7 @@ public class City extends Serializable {
         var box = new Box(minX, 0, minZ, maxX, 255, maxZ);
         drawParticleBox(this.world, box, ParticleTypes.FLAME);
     }
-
+ 
     public UUID getCityId() {
         return this.id;
     }
@@ -220,34 +219,14 @@ public class City extends Serializable {
                 // TODO: add the structure to the map
 //                var structure = new Structure(this, box, rotatedBlueprint, direction);
 
-                this.buildBlueprintAt(blueprint, box, direction);
+                logger.info("Building blueprint at {}, pointing {}", box, direction);
+                instaBuildBlueprint(world, blueprint, box, direction);
                 return;
             }
 
             logger.info("No rectangle found, trying again");
         }
 
-    }
-
-    private void buildBlueprintAt(Blueprint blueprint, Box box, CardinalDirection direction) {
-        logger.info("Building blueprint at {}, pointing {}", box, direction);
-        var b = blueprint.rotate(direction);
-        if (b.getLengthX() != box.getXLength() + 1 || b.getLengthY() != box.getYLength() + 1 || b.getLengthZ() != box.getZLength() + 1) {
-            throw new IllegalStateException("Blueprint size does not match place size");
-        }
-
-        var offset = new BlockPos(box.minX, box.minY, box.minZ);
-
-        for (BlockPos pos : getAllPositions(box)) {
-            try {
-                var blockState = b.getBlockState(pos.subtract(offset));
-                if (!blockState.isAir()) {
-                    this.getWorld().setBlockState(pos, blockState);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public enum CityMapTile {

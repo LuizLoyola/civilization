@@ -38,7 +38,7 @@ public class BlueprintItem extends ItemBase {
 
         var blueprintMaker = new BlueprintMaker(world);
         blueprintMaker.fromNbt(context.getStack().getNbt());
-        var msg = blueprintMaker.usedOnBlock(context.getWorld(), context.getBlockPos(), context.getSide(), player.isSneaking());
+        var msg = blueprintMaker.usedOnBlock(world, context.getBlockPos(), context.getSide(), player.isSneaking());
         if (msg != null) player.sendMessage(msg, false);
         context.getStack().setNbt(blueprintMaker.toNbt());
         return ActionResult.CONSUME;
@@ -71,5 +71,13 @@ public class BlueprintItem extends ItemBase {
             else
                 drawParticleBox(world, box, ParticleTypes.FLAME);
         }
+    }
+
+    @Override
+    public boolean hasGlint(ItemStack stack) {
+        var blueprintMaker = new BlueprintMaker(null);
+        blueprintMaker.fromNbt(stack.getNbt());
+
+        return blueprintMaker.loadMode;
     }
 }

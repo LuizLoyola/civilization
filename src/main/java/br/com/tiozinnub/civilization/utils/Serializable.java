@@ -47,6 +47,7 @@ public abstract class Serializable {
             switch (type) {
                 case INTEGER -> Optional.ofNullable((Integer) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case STRING -> Optional.ofNullable((String) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case BOOLEAN -> Optional.ofNullable((Boolean) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case BLOCK_POS -> Optional.ofNullable((BlockPos) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case DIRECTION -> Optional.ofNullable((Direction) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case CARDINAL_DIRECTION -> Optional.ofNullable((CardinalDirection) getter.get()).ifPresent(value -> put(nbt, key, value));
@@ -95,6 +96,7 @@ public abstract class Serializable {
                 switch (type) {
                     case INTEGER -> ((Consumer<Integer>) setter).accept(get(nbt, key, (Integer) this.defaultValues.get(key)));
                     case STRING -> ((Consumer<String>) setter).accept(get(nbt, key, (String) this.defaultValues.get(key)));
+                    case BOOLEAN -> ((Consumer<Boolean>) setter).accept(get(nbt, key, (Boolean) this.defaultValues.get(key)));
                     case BLOCK_POS -> ((Consumer<BlockPos>) setter).accept(get(nbt, key, (BlockPos) this.defaultValues.get(key)));
                     case DIRECTION -> ((Consumer<Direction>) setter).accept(get(nbt, key, (Direction) this.defaultValues.get(key), Direction::byName));
                     case CARDINAL_DIRECTION ->
@@ -129,12 +131,16 @@ public abstract class Serializable {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BLOCK_POS);
         }
 
-        public void registerProperty(String key, Supplier<Integer> getter, Consumer<Integer> setter, Integer defaultValue) {
+        public void registerProperty(String key, Supplier<Integer> getter, Consumer<Integer> setter, int defaultValue) {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.INTEGER);
         }
 
         public void registerProperty(String key, Supplier<String> getter, Consumer<String> setter, String defaultValue) {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.STRING);
+        }
+
+        public void registerProperty(String key, Supplier<Boolean> getter, Consumer<Boolean> setter, boolean defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.BOOLEAN);
         }
 
         public void registerProperty(String key, Supplier<Direction> getter, Consumer<Direction> setter, Direction defaultValue) {
@@ -149,7 +155,7 @@ public abstract class Serializable {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.UUID);
         }
 
-        public void registerProperty(String key, Supplier<Byte> getter, Consumer<Byte> setter, Byte defaultValue) {
+        public void registerProperty(String key, Supplier<Byte> getter, Consumer<Byte> setter, byte defaultValue) {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BYTE);
         }
 
