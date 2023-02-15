@@ -1,6 +1,6 @@
-package br.com.tiozinnub.civilization.block;
+package br.com.tiozinnub.civilization.block.building.citycenter;
 
-import br.com.tiozinnub.civilization.block.entity.CityCenterBlockEntity;
+import br.com.tiozinnub.civilization.block.building.CityBuildingBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;

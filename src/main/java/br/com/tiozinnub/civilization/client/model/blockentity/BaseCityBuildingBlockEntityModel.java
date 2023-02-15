@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.client.model.blockentity;
 
-import br.com.tiozinnub.civilization.block.entity.CityBuildingBlockEntity;
+import br.com.tiozinnub.civilization.block.building.CityBuildingBlockEntity;
 import net.minecraft.util.Identifier;
 
 import static br.com.tiozinnub.civilization.utils.Constraints.idFor;

@@ -38,3 +38,4 @@ public class PersonNamesConfig implements ConfigData {
         return lastNames.get(random.nextInt(lastNames.size()));
     }
 }
+

@@ -1,6 +1,6 @@
-package br.com.tiozinnub.civilization.block.entity;
+package br.com.tiozinnub.civilization.block;
 
-import br.com.tiozinnub.civilization.block.BlockRegistry;
+import br.com.tiozinnub.civilization.block.building.citycenter.CityCenterBlockEntity;
 import br.com.tiozinnub.civilization.client.renderer.blockentity.BaseCityBuildingBlockEntityRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;

@@ -17,10 +17,9 @@ public class CivilizationModConfig extends PartitioningSerializer.GlobalData {
     @ConfigEntry.Gui.TransitiveObject
     PersonNamesConfig personNames = new PersonNamesConfig();
 
-//    // town names
-//    @ConfigEntry.Category("town_names")
-//    @ConfigEntry.Gui.TransitiveObject
-//    TownNamesConfig townNames = new TownNamesConfig();
+    @ConfigEntry.Category("city_names")
+    @ConfigEntry.Gui.TransitiveObject
+    CityNamesConfig cityNames = new CityNamesConfig();
 
 
     private static CivilizationModConfig getConfig() {
@@ -35,9 +34,9 @@ public class CivilizationModConfig extends PartitioningSerializer.GlobalData {
         return getConfig().personNames;
     }
 
-//    public static TownNamesConfig getTownNamesConfig() {
-//        return getConfig().townNames;
-//    }
+    public static CityNamesConfig getCityNamesConfig() {
+        return getConfig().cityNames;
+    }
 
 
 }

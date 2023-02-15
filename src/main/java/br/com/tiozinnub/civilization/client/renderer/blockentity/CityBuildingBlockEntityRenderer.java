@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.client.renderer.blockentity;
 
-import br.com.tiozinnub.civilization.block.entity.CityBuildingBlockEntity;
+import br.com.tiozinnub.civilization.block.building.CityBuildingBlockEntity;
 import br.com.tiozinnub.civilization.client.model.blockentity.CityBuildingBlockEntityModel;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;

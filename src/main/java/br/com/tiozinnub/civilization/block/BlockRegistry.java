@@ -1,5 +1,6 @@
 package br.com.tiozinnub.civilization.block;
 
+import br.com.tiozinnub.civilization.block.building.citycenter.CityCenterBlock;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 

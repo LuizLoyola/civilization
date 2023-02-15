@@ -1,7 +1,7 @@
 package br.com.tiozinnub.civilization;
 
+import br.com.tiozinnub.civilization.block.BlockEntityRegistry;
 import br.com.tiozinnub.civilization.block.BlockRegistry;
-import br.com.tiozinnub.civilization.block.entity.BlockEntityRegistry;
 import br.com.tiozinnub.civilization.command.CommandRegistry;
 import br.com.tiozinnub.civilization.config.ConfigRegistry;
 import br.com.tiozinnub.civilization.entity.EntityRegistry;
