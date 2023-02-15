@@ -10,16 +10,7 @@ public enum Gender implements StringIdentifiable {
     MALE,
     FEMALE;
 
-    public Gender opposite() {
-        return this == MALE ? FEMALE : MALE;
-    }
-
-    @Override
-    public String asString() {
-        return this.name().toLowerCase(Locale.ROOT);
-    }
-
-    public static Gender byName(String name) {
+    public static Gender fromString(String name) {
         return valueOf(name.toUpperCase(Locale.ROOT));
     }
 
@@ -33,6 +24,15 @@ public enum Gender implements StringIdentifiable {
 
     public static <T> T byGender(IGendered gendered, T ifMale, T ifFemale) {
         return byGender(gendered.getGender(), ifMale, ifFemale);
+    }
+
+    public Gender opposite() {
+        return this == MALE ? FEMALE : MALE;
+    }
+
+    @Override
+    public String asString() {
+        return this.name().toLowerCase(Locale.ROOT);
     }
 
 }

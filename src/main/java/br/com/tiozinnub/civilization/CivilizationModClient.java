@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization;
 
-import br.com.tiozinnub.civilization.registry.EntityRegistry;
+import br.com.tiozinnub.civilization.entity.EntityRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

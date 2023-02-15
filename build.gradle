@@ -11,14 +11,14 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
+    // GeckoLib
+    maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
+
     // ClothConfig
-    maven { url 'https://maven.shedaniel.me/' }
+    maven { url "https://maven.shedaniel.me/" }
 
     // ModMenu
     maven { url 'https://maven.terraformersmc.com/' }
-
-    // GeckoLib
-    maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
 }
 
 dependencies {
@@ -29,7 +29,13 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Geckolib
-    modImplementation 'software.bernie.geckolib:geckolib-fabric-1.19.3:4.0.3'
+    modImplementation "software.bernie.geckolib:geckolib-fabric-1.19.3:4.0.3"
+
+    // Cloth Config
+    modApi "me.shedaniel.cloth:cloth-config-fabric:9.0.94"
+
+    // ModMenu
+    modApi "com.terraformersmc:modmenu:5.0.2"
 }
 
 processResources {

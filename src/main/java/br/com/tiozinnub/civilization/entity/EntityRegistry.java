@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.registry;
+package br.com.tiozinnub.civilization.entity;
 
 import br.com.tiozinnub.civilization.client.renderer.entity.PersonEntityRenderer;
 import br.com.tiozinnub.civilization.entity.person.PersonEntity;

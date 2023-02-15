@@ -11,24 +11,30 @@ import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 public class PersonEntityModel extends GeoModel<PersonEntity> {
     @Override
     public Identifier getModelResource(PersonEntity personEntity) {
+        var identity = personEntity.getIdentity();
+
         return idFor("geo/entity/person/%s_%s.geo.json".formatted(
-                personEntity.getSpecies().asString().toLowerCase(Locale.ROOT),
-                personEntity.getGender().asString().toLowerCase(Locale.ROOT)
+                identity.getSpecies().asString().toLowerCase(Locale.ROOT),
+                identity.getGender().asString().toLowerCase(Locale.ROOT)
         ));
     }
 
     @Override
     public Identifier getTextureResource(PersonEntity personEntity) {
+        var identity = personEntity.getIdentity();
+
         return idFor("textures/entity/person/%s_%s.png".formatted(
-                personEntity.getSpecies().asString().toLowerCase(Locale.ROOT),
-                personEntity.getGender().asString().toLowerCase(Locale.ROOT)
+                identity.getSpecies().asString().toLowerCase(Locale.ROOT),
+                identity.getGender().asString().toLowerCase(Locale.ROOT)
         ));
     }
 
     @Override
     public Identifier getAnimationResource(PersonEntity personEntity) {
+        var identity = personEntity.getIdentity();
+
         return idFor("animations/entity/person/%s.animation.json".formatted(
-                personEntity.getSpecies().asString().toLowerCase(Locale.ROOT)
+                identity.getSpecies().asString().toLowerCase(Locale.ROOT)
         ));
     }
 }

@@ -20,6 +20,9 @@
     ],
     "main": [
       "br.com.tiozinnub.civilization.CivilizationMod"
+    ],
+    "modmenu": [
+      "br.com.tiozinnub.civilization.integration.ModMenuIntegration"
     ]
   },
   "mixins": [
@@ -30,7 +33,5 @@
     "fabric-api": "*",
     "minecraft": "~1.19.3",
     "java": ">=17"
-  },
-  "suggests": {
   }
 }
