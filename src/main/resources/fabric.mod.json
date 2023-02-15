@@ -1,29 +1,29 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "civilization",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Civilization",
+  "description": "Civilization Mod!",
   "authors": [
-    "Me!"
+    "TiozinNub"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://civilization.tiozinnub.com.br/",
+    "sources": "https://github.com/LuizLoyola/civilization"
   },
 
   "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/civilization/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleMod"
+      "br.com.tiozinnub.civilization.CivilizationMod"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "civilization.mixins.json"
   ],
 
   "depends": {
