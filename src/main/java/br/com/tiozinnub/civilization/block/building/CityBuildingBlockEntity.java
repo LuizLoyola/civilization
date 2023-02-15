@@ -9,6 +9,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
@@ -17,30 +18,38 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 public abstract class CityBuildingBlockEntity<D extends CityBuildingBlockData> extends BlockEntity implements GeoBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-    private final D cityBuildingData;
+    private D cityBuildingData;
 
     public CityBuildingBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
-
-        cityBuildingData = this.initializeBuildingData();
-        this.markDirty();
     }
 
-    protected abstract D initializeBuildingData();
+    protected abstract D initializeBuildingData(Random random);
+
+    protected abstract D initializeBuildingData(NbtCompound nbt);
 
     @Override
     public void readNbt(NbtCompound nbt) {
-        cityBuildingData.fromNbt(nbt, "cityBuildingData");
+        var compound = nbt.getCompound("cityBuildingData");
+        if (compound != null) {
+            if (cityBuildingData == null) cityBuildingData = initializeBuildingData(compound);
+            else cityBuildingData.fromNbt(compound);
+        }
         super.readNbt(nbt);
     }
 
     @Override
     protected void writeNbt(NbtCompound nbt) {
         super.writeNbt(nbt);
-        cityBuildingData.toNbt(nbt, "cityBuildingData");
+        getData().toNbt(nbt, "cityBuildingData");
     }
 
     protected D getData() {
+        if (cityBuildingData == null) {
+            cityBuildingData = this.initializeBuildingData(getWorld().getRandom());
+            this.markDirty();
+        }
+
         return cityBuildingData;
     }
 

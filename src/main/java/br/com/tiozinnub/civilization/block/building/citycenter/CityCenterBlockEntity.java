@@ -4,11 +4,13 @@ import br.com.tiozinnub.civilization.block.BlockEntityRegistry;
 import br.com.tiozinnub.civilization.block.building.CityBuildingBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
 public class CityCenterBlockEntity extends CityBuildingBlockEntity<CityCenterBlockData> {
@@ -17,8 +19,18 @@ public class CityCenterBlockEntity extends CityBuildingBlockEntity<CityCenterBlo
     }
 
     @Override
-    protected CityCenterBlockData initializeBuildingData() {
-        return CityCenterBlockData.randomize(getWorld().getRandom());
+    protected CityCenterBlockData initializeBuildingData(Random random) {
+        return new CityCenterBlockData(random);
+    }
+
+    @Override
+    protected CityCenterBlockData initializeBuildingData(NbtCompound nbt) {
+        return new CityCenterBlockData(nbt);
+    }
+
+    @Override
+    public NbtCompound toInitialChunkDataNbt() {
+        return super.toInitialChunkDataNbt();
     }
 
     @Override
