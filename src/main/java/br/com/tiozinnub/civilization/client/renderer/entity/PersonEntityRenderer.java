@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.client.renderer.entity;
 
-import br.com.tiozinnub.civilization.client.entity.PersonEntityModel;
+import br.com.tiozinnub.civilization.client.model.entity.PersonEntityModel;
 import br.com.tiozinnub.civilization.entity.person.PersonEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;

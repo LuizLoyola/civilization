@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.client.entity;
+package br.com.tiozinnub.civilization.client.model.entity;
 
 import br.com.tiozinnub.civilization.entity.person.PersonEntity;
 import net.minecraft.util.Identifier;
