@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.block.building.citycenter;
 
-import br.com.tiozinnub.civilization.block.BlockEntityRegistry;
+import br.com.tiozinnub.civilization.block.BlockEntities;
 import br.com.tiozinnub.civilization.block.building.CityBuildingBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,7 +15,7 @@ import net.minecraft.world.World;
 
 public class CityCenterBlockEntity extends CityBuildingBlockEntity<CityCenterBlockData> {
     public CityCenterBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockEntityRegistry.CITY_CENTER_BLOCK_ENTITY, pos, state);
+        super(BlockEntities.CITY_CENTER_BLOCK_ENTITY, pos, state);
     }
 
     @Override

@@ -119,9 +119,9 @@ public class PersonEntity extends EntityBase implements IGendered {
         if (entityNbt != null) {
             readCustomDataFromNbt(entityNbt);
         } else {
-//            this.dataTracker.set(IDENTITY, PersonIdentity.randomize(world.getRandom()).toNbt());
+            this.dataTracker.set(IDENTITY, PersonIdentity.randomize(world.getRandom()).toNbt());
             // cancel creation, kill entity
-            this.kill();
+//            this.kill();
         }
 
         return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);

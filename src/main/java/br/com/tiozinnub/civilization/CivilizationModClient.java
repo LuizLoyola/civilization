@@ -1,7 +1,7 @@
 package br.com.tiozinnub.civilization;
 
-import br.com.tiozinnub.civilization.block.BlockEntityRegistry;
-import br.com.tiozinnub.civilization.entity.EntityRegistry;
+import br.com.tiozinnub.civilization.block.BlockEntities;
+import br.com.tiozinnub.civilization.entity.Entities;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -10,7 +10,7 @@ import net.fabricmc.api.Environment;
 public class CivilizationModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        BlockEntityRegistry.registerClient();
-        EntityRegistry.registerClient();
+        BlockEntities.registerClient();
+        Entities.registerClient();
     }
 }

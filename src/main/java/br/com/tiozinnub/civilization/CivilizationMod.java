@@ -1,10 +1,12 @@
 package br.com.tiozinnub.civilization;
 
-import br.com.tiozinnub.civilization.block.BlockEntityRegistry;
-import br.com.tiozinnub.civilization.block.BlockRegistry;
-import br.com.tiozinnub.civilization.command.CommandRegistry;
-import br.com.tiozinnub.civilization.config.ConfigRegistry;
-import br.com.tiozinnub.civilization.entity.EntityRegistry;
+import br.com.tiozinnub.civilization.block.BlockEntities;
+import br.com.tiozinnub.civilization.block.Blocks;
+import br.com.tiozinnub.civilization.command.Commands;
+import br.com.tiozinnub.civilization.config.Configs;
+import br.com.tiozinnub.civilization.entity.Entities;
+import br.com.tiozinnub.civilization.item.ItemGroups;
+import br.com.tiozinnub.civilization.item.Items;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,12 +18,15 @@ public class CivilizationMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ConfigRegistry.register();
+        Configs.register();
 
-        CommandRegistry.register();
+        Commands.register();
 
-        BlockRegistry.register();
-        BlockEntityRegistry.register();
-        EntityRegistry.register();
+        Blocks.register();
+        BlockEntities.register();
+        Entities.register();
+
+        Items.register();
+        ItemGroups.register();
     }
 }

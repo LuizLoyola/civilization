@@ -6,7 +6,7 @@ import net.minecraft.registry.Registry;
 
 import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 
-public class BlockRegistry {
+public class Blocks {
     public static final CityCenterBlock CITY_CENTER_BLOCK = new CityCenterBlock();
 
     public static void register() {

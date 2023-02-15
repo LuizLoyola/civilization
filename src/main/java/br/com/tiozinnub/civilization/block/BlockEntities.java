@@ -10,11 +10,11 @@ import net.minecraft.registry.Registry;
 
 import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 
-public class BlockEntityRegistry {
+public class BlockEntities {
     public static BlockEntityType<CityCenterBlockEntity> CITY_CENTER_BLOCK_ENTITY;
 
     public static void register() {
-        CITY_CENTER_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, idFor("city_center_block_entity"), FabricBlockEntityTypeBuilder.create(CityCenterBlockEntity::new, BlockRegistry.CITY_CENTER_BLOCK).build(null));
+        CITY_CENTER_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, idFor("city_center_block_entity"), FabricBlockEntityTypeBuilder.create(CityCenterBlockEntity::new, Blocks.CITY_CENTER_BLOCK).build(null));
     }
 
     public static void registerClient() {
