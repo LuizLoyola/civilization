@@ -5,13 +5,13 @@ import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static br.com.tiozinnub.civilization.util.Constraints.MOD_ID;
+import static br.com.tiozinnub.civilization.utils.Constraints.MOD_ID;
 
 public class CivilizationMod implements ModInitializer {
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	@Override
-	public void onInitialize() {
-		EntityRegistry.register();
-	}
+    @Override
+    public void onInitialize() {
+        EntityRegistry.register();
+    }
 }

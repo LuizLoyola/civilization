@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.util;
+package br.com.tiozinnub.civilization.utils;
 
 import net.minecraft.util.Identifier;
 

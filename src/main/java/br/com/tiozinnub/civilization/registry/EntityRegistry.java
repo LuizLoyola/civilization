@@ -12,10 +12,10 @@ import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 
-import static br.com.tiozinnub.civilization.util.Constraints.idFor;
+import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 
 public class EntityRegistry {
-    public static final EntityType<PersonEntity> PERSON = buildEntity((type, world) -> new PersonEntity(type, world), PersonEntity.DIMENSIONS, PersonEntity.SPAWN_GROUP, PersonEntity.NAME);
+    public static final EntityType<PersonEntity> PERSON = buildEntity(PersonEntity::new, PersonEntity.DIMENSIONS, PersonEntity.SPAWN_GROUP, PersonEntity.NAME);
 
     private static <T extends Entity> EntityType<T> buildEntity(EntityType.EntityFactory<T> factory, EntityDimensions dimensions, SpawnGroup spawnGroup, String name) {
         return Registry.register(Registries.ENTITY_TYPE, idFor(name), FabricEntityTypeBuilder.create(spawnGroup, factory).dimensions(dimensions).build());
@@ -26,6 +26,6 @@ public class EntityRegistry {
     }
 
     public static void registerClient() {
-        EntityRendererRegistry.register(EntityRegistry.PERSON, ctx -> new PersonEntityRenderer(ctx));
+        EntityRendererRegistry.register(EntityRegistry.PERSON, PersonEntityRenderer::new);
     }
 }
