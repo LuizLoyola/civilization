@@ -1,5 +1,6 @@
 package br.com.tiozinnub.civilization;
 
+import br.com.tiozinnub.civilization.command.CommandRegistry;
 import br.com.tiozinnub.civilization.config.ConfigRegistry;
 import br.com.tiozinnub.civilization.entity.EntityRegistry;
 import net.fabricmc.api.ModInitializer;
@@ -14,7 +15,9 @@ public class CivilizationMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ConfigRegistry.register();
-        
+
+        CommandRegistry.register();
+
         EntityRegistry.register();
     }
 }
