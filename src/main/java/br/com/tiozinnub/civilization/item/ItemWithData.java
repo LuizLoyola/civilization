@@ -28,8 +28,10 @@ public abstract class ItemWithData<D extends Serializable> extends Item {
 
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        var result = useOnEntity(stack, getData(stack), user, entity, hand);
-        stack.setNbt(getData(stack).toNbt());
+        var itemStack = user.getStackInHand(hand);
+        var data = getData(itemStack);
+        var result = useOnEntity(itemStack, data, user, entity, hand);
+        itemStack.setNbt(data.toNbt());
         return result;
     }
 
@@ -39,8 +41,10 @@ public abstract class ItemWithData<D extends Serializable> extends Item {
 
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
-        var result = useOnBlock(context, getData(context.getStack()));
-        context.getStack().setNbt(getData(context.getStack()).toNbt());
+        var itemStack = context.getStack();
+        var data = getData(itemStack);
+        var result = useOnBlock(context, data);
+        context.getStack().setNbt(data.toNbt());
         return result;
     }
 

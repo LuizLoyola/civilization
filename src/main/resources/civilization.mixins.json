@@ -4,9 +4,7 @@
   "package": "br.com.tiozinnub.civilization.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-  ],
-  "client": [
-    "CivilizationModClientMixin"
+    "ServerWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

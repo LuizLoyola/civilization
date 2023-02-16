@@ -1,5 +1,7 @@
 package br.com.tiozinnub.civilization.item.debug;
 
+import br.com.tiozinnub.civilization.entity.person.PersonEntity;
+import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import br.com.tiozinnub.civilization.item.ItemWithData;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
@@ -8,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -46,8 +49,29 @@ public class PathWandItem extends ItemWithData<PathWandItem.PathWandItemData> {
     @Override
     public ActionResult useOnBlock(ItemUsageContext context, PathWandItemData data) {
         if (context.getWorld().isClient()) return ActionResult.SUCCESS;
+        var player = context.getPlayer();
+        if (player == null) return ActionResult.SUCCESS;
 
-//        var targetEntity = context.getWorld().getEntitiesByClass(PersonEntity.class, )
+        var targetUuid = data.getTargetUuid();
+
+        if (targetUuid == null) {
+            player.sendMessage(Text.of("No target set"), false);
+            return ActionResult.SUCCESS;
+        }
+
+        var serverWorld = (ServerWorld) context.getWorld();
+        var personCatalog = ((IServerWorldExt) serverWorld).getPersonCatalog();
+
+        var entityId = personCatalog.getPersonId(data.getTargetUuid());
+        var personEntity = (PersonEntity) serverWorld.getEntityById(entityId);
+
+        if (personEntity == null) {
+            player.sendMessage(Text.of("Target not found"), false);
+            return ActionResult.SUCCESS;
+        }
+
+        // Set path target
+
         return ActionResult.SUCCESS;
     }
 

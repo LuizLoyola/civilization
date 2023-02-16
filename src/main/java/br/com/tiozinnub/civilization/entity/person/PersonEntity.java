@@ -3,14 +3,20 @@ package br.com.tiozinnub.civilization.entity.person;
 import br.com.tiozinnub.civilization.entity.EntityBase;
 import br.com.tiozinnub.civilization.entity.property.Gender;
 import br.com.tiozinnub.civilization.entity.property.IGendered;
+import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.MerchantEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -32,6 +38,8 @@ public class PersonEntity extends EntityBase implements IGendered {
         IDENTITY = DataTracker.registerData(PersonEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
     }
 
+    private boolean registeredOnCatalog = false;
+
     public PersonEntity(EntityType<? extends MerchantEntity> entityType, World world) {
         super(entityType, world);
 
@@ -42,8 +50,27 @@ public class PersonEntity extends EntityBase implements IGendered {
         return EntityBase.createMobAttributes(); // TODO
     }
 
+    @Override
+    public void tick() {
+        if (getWorld().isClient()) return;
+
+        if (!registeredOnCatalog) {
+            ((IServerWorldExt) getWorld()).getPersonCatalog().update(getId(), getUuid());
+            registeredOnCatalog = true;
+        }
+    }
+
+    @Override
+    public void onDeath(DamageSource damageSource) {
+        super.onDeath(damageSource);
+
+        if (world instanceof ServerWorld serverWorld) {
+            ((IServerWorldExt) serverWorld).getPersonCatalog().remove(getUuid());
+        }
+    }
+
     private void startTracking() {
-        this.dataTracker.startTracking(IDENTITY, PersonIdentity.empty().toNbt());
+        this.dataTracker.startTracking(IDENTITY, new NbtCompound());
     }
 
     public PersonIdentity getIdentity() {
@@ -126,13 +153,24 @@ public class PersonEntity extends EntityBase implements IGendered {
         }).toList();
     }
 
+    @Override
+    protected ActionResult interactMob(PlayerEntity player, Hand hand) {
+        if (getWorld().isClient()) return ActionResult.SUCCESS;
+
+        player.sendMessage(Text.of(getUuidAsString()), false);
+        player.sendMessage(Text.of(getUuid().toString()), false);
+        player.sendMessage(Text.of(String.valueOf(getId())), false);
+
+        return ActionResult.PASS;
+    }
+
     @Nullable
     @Override
     public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt) {
         if (entityNbt != null) {
             readCustomDataFromNbt(entityNbt);
         } else {
-            this.dataTracker.set(IDENTITY, PersonIdentity.randomize(world.getRandom()).toNbt());
+            this.dataTracker.set(IDENTITY, PersonIdentity.randomize(getUuid(), world.getRandom()).toNbt());
             // cancel creation, kill entity
 //            this.kill();
         }
@@ -144,7 +182,9 @@ public class PersonEntity extends EntityBase implements IGendered {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
 
-        this.dataTracker.set(IDENTITY, nbt.getCompound("identity"));
+        if (nbt.contains("identity")) {
+            this.dataTracker.set(IDENTITY, nbt.getCompound("identity"));
+        }
     }
 
     @Override

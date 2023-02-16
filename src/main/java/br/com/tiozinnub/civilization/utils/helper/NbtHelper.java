@@ -24,6 +24,16 @@ public class NbtHelper {
         nbt.put(key, compound);
     }
 
+    public static <K> void putHashMapWithInteger(NbtCompound nbt, String key, Map<K, Integer> map) {
+        var compound = new NbtCompound();
+        for (var entry : map.entrySet()) {
+            var entryKey = entry.getKey();
+            var entryValue = entry.getValue();
+            compound.putInt(entryKey.toString(), entryValue);
+        }
+        nbt.put(key, compound);
+    }
+
     public static void put(NbtCompound nbt, String key, Integer value) {
         nbt.putInt(key, value);
     }
@@ -83,6 +93,15 @@ public class NbtHelper {
         for (var entry : compound.getKeys()) {
             var entryKey = keyConstructor.apply(entry);
             var entryValue = valueConstructor.apply(compound.getCompound(entry));
+            map.put(entryKey, entryValue);
+        }
+    }
+
+    public static <K> void getHashMapWithInteger(NbtCompound nbt, String key, Function<String, K> keyConstructor, Map<K, Integer> map) {
+        var compound = nbt.getCompound(key);
+        for (var entry : compound.getKeys()) {
+            var entryKey = keyConstructor.apply(entry);
+            var entryValue = compound.getInt(entry);
             map.put(entryKey, entryValue);
         }
     }
