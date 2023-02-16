@@ -4,7 +4,9 @@ import br.com.tiozinnub.civilization.entity.EntityBase;
 import br.com.tiozinnub.civilization.entity.property.Gender;
 import br.com.tiozinnub.civilization.entity.property.IGendered;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
-import net.minecraft.entity.*;
+import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -28,15 +30,13 @@ import java.util.List;
 import static br.com.tiozinnub.civilization.entity.property.Gender.byGender;
 
 public class PersonEntity extends EntityBase implements IGendered {
-    public static final EntityDimensions DIMENSIONS = EntityDimensions.changing(0.6F, 1.8F);
-    public static final SpawnGroup SPAWN_GROUP = SpawnGroup.MISC;
-    public static final String NAME = "person";
 
     private static final TrackedData<NbtCompound> IDENTITY;
 
     static {
         IDENTITY = DataTracker.registerData(PersonEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
     }
+
 
     private boolean registeredOnCatalog = false;
 
@@ -52,6 +52,7 @@ public class PersonEntity extends EntityBase implements IGendered {
 
     @Override
     public void tick() {
+        super.tick();
         if (getWorld().isClient()) return;
 
         if (!registeredOnCatalog) {
@@ -82,11 +83,6 @@ public class PersonEntity extends EntityBase implements IGendered {
         return getIdentity().getGender();
     }
 
-
-    @Override
-    public boolean cannotDespawn() {
-        return true;
-    }
 
     @SuppressWarnings("UnnecessaryUnicodeEscape")
     public List<Text> getMultilineNameplate() {
@@ -145,9 +141,7 @@ public class PersonEntity extends EntityBase implements IGendered {
 
         return Arrays.stream(new Text[]{
                 Text.of(sbName.toString()),
-                Text.of(sbHealth.toString()),
-                Text.of(getUuidAsString()),
-                Text.of(String.valueOf(getId()))
+                Text.of(sbHealth.toString())
 //                Text.of(sbHunger.toString()),
                 //Text.of("§00§11§22§33§44§55§66§77§88§99§aa§bb§cc§dd§ee§ff")
         }).toList();
@@ -219,4 +213,5 @@ public class PersonEntity extends EntityBase implements IGendered {
     public Text getName() {
         return Text.of(getIdentity().getFullName());
     }
+
 }

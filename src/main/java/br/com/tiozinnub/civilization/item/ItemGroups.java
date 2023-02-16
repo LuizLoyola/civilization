@@ -18,6 +18,7 @@ public class ItemGroups {
     public static void register() {
         ItemGroupEvents.modifyEntriesEvent(CIVILIZATION_DEBUG).register(entries -> {
             entries.add(Items.PATH_WAND);
+            entries.add(Items.PATH_TICKER);
         });
     }
 }

@@ -62,15 +62,16 @@ public class PathWandItem extends ItemWithData<PathWandItem.PathWandItemData> {
         var serverWorld = (ServerWorld) context.getWorld();
         var personCatalog = ((IServerWorldExt) serverWorld).getPersonCatalog();
 
-        var entityId = personCatalog.getPersonId(data.getTargetUuid());
-        var personEntity = (PersonEntity) serverWorld.getEntityById(entityId);
+//        var entityId = personCatalog.getPersonId(data.getTargetUuid());
+//        var personEntity = (PersonEntity) serverWorld.getEntityById(entityId);
+        var personEntity = (PersonEntity) serverWorld.getEntity(data.getTargetUuid());
 
         if (personEntity == null) {
             player.sendMessage(Text.of("Target not found"), false);
             return ActionResult.SUCCESS;
         }
 
-        // Set path target
+        personEntity.setMovementTarget(context.getBlockPos().up());
 
         return ActionResult.SUCCESS;
     }

@@ -16,11 +16,16 @@ import java.util.List;
 public class PersonEntityRenderer extends GeoEntityRenderer<PersonEntity> {
     public PersonEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new PersonEntityModel());
+        scaleHeight = 0.9375f / 2;
+        scaleWidth = 0.9375f;
     }
 
     @Override
     protected void renderLabelIfPresent(PersonEntity personEntity, Text text, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light) {
         double d = this.dispatcher.getSquaredDistanceToCamera(personEntity);
+
+        float margin = 0.675f;
+        float padding = 0.325f;
 
         if (!(d > 4096.0D)) {
             boolean sneaky = !personEntity.isSneaky();
@@ -34,7 +39,7 @@ public class PersonEntityRenderer extends GeoEntityRenderer<PersonEntity> {
             for (int i = 0, multilineNameplateSize = multilineNameplate.size(); i < multilineNameplateSize; i++) {
                 Text line = multilineNameplate.get(i);
 
-                var height = personEntity.getHeight() + 0.5F + ((multilineNameplateSize - i - 1) * 0.25f);
+                var height = personEntity.getHeight() + margin + ((multilineNameplateSize - i - 1) * padding);
 
                 drawLabel(line, sneaky, height, matrixStack, vertexConsumerProvider, light);
             }

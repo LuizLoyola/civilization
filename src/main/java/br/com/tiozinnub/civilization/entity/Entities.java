@@ -15,7 +15,7 @@ import net.minecraft.registry.Registry;
 import static br.com.tiozinnub.civilization.utils.Constraints.idFor;
 
 public class Entities {
-    public static final EntityType<PersonEntity> PERSON = buildEntity(PersonEntity::new, PersonEntity.DIMENSIONS, PersonEntity.SPAWN_GROUP, PersonEntity.NAME);
+    public static final EntityType<PersonEntity> PERSON = buildEntity(PersonEntity::new, EntityDimensions.changing(0.6F, 1.8F), SpawnGroup.MISC, "person");
 
     private static <T extends Entity> EntityType<T> buildEntity(EntityType.EntityFactory<T> factory, EntityDimensions dimensions, SpawnGroup spawnGroup, String name) {
         return Registry.register(Registries.ENTITY_TYPE, idFor(name), FabricEntityTypeBuilder.create(spawnGroup, factory).dimensions(dimensions).build());
