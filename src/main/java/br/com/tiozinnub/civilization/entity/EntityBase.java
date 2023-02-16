@@ -163,11 +163,9 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
     }
 
     public void tickPathfinder() {
-//        this.getPathfinderService().tick();
-
+        this.getPathfinderService().tick();
 //        this.move(MovementType.PLAYER, new Vec3d(0, 1, 0));
-
-        this.jump();
+//        this.jump();
     }
 
     private class MovementControl extends Serializable {
@@ -176,7 +174,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
         @Override
         public void registerProperties(SerializableHelper helper) {
-            helper.registerProperty("path", this::getPath, this::setPath, null);
+            helper.registerProperty("path", this::getPath, this::setPath, Path::new);
             helper.registerProperty("stepIndex", () -> this.stepIndex, i -> this.stepIndex = i, 0);
         }
 

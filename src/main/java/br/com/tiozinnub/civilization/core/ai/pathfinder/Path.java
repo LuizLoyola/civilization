@@ -10,11 +10,12 @@ import java.util.List;
 import static br.com.tiozinnub.civilization.utils.helper.StringHelper.getStringFromBlockPos;
 
 public class Path extends Serializable {
-    private List<Step> steps;
+    private final List<Step> steps;
     private BlockPos start;
     private String pathData;
 
     public Path(NbtCompound nbt) {
+        this.steps = Lists.newArrayList();
         fromNbt(nbt);
     }
 

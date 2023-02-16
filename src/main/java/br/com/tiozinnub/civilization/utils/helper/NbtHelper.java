@@ -152,4 +152,9 @@ public class NbtHelper {
         var compound = nbt.getCompound(key);
         return valueConstructor.get().fromNbt(compound);
     }
+
+    public static <T extends Serializable> Serializable get(NbtCompound nbt, String key, Function<NbtCompound, ? extends Serializable> valueConstructor) {
+        var compound = nbt.getCompound(key);
+        return valueConstructor.apply(compound);
+    }
 }

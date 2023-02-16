@@ -8,6 +8,7 @@ import net.minecraft.util.math.Direction;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,7 @@ public abstract class Serializable {
     private final Map<String, Consumer<?>> setters;
     private final Map<String, Object> defaultValues;
     private final Map<String, Supplier<? extends Serializable>> constructors;
+    private final Map<String, Function<NbtCompound, ? extends Serializable>> functions;
 
     public Serializable() {
         this.types = new HashMap<>();
@@ -27,11 +29,18 @@ public abstract class Serializable {
         this.setters = new HashMap<>();
         this.defaultValues = new HashMap<>();
         this.constructors = new HashMap<>();
+        this.functions = new HashMap<>();
         var helper = new SerializableHelper();
         this.registerProperties(helper);
     }
 
     public abstract void registerProperties(SerializableHelper helper);
+
+    public NbtCompound toNbt(NbtCompound nbt, String key) {
+        var innerNbt = toNbt();
+        nbt.put(key, innerNbt);
+        return nbt;
+    }
 
     public NbtCompound toNbt() {
         return toNbt(new NbtCompound());
@@ -66,14 +75,8 @@ public abstract class Serializable {
         return nbt;
     }
 
-    public NbtCompound toNbt(NbtCompound nbt, String key) {
-        var innerNbt = toNbt();
-        nbt.put(key, innerNbt);
-        return nbt;
-    }
-
     public Serializable fromNbt(NbtCompound nbt, String key) {
-        return fromNbt(nbt.getCompound(key));
+        return fromNbt(get(nbt, key, (NbtCompound) null));
     }
 
     public Set<Map.Entry<String, SerializableType>> customKeyOrder(Set<Map.Entry<String, SerializableType>> entrySet) {
@@ -103,7 +106,13 @@ public abstract class Serializable {
                     case UUID -> ((Consumer<UUID>) setter).accept(get(nbt, key, (UUID) this.defaultValues.get(key)));
                     case BYTE -> ((Consumer<Byte>) setter).accept(get(nbt, key, (Byte) this.defaultValues.get(key)));
                     case BOX -> ((Consumer<Box>) setter).accept(get(nbt, key, (Box) this.defaultValues.get(key)));
-                    case SERIALIZABLE -> ((Consumer<Serializable>) setter).accept(get(nbt, key, this.constructors.get(key)));
+                    case SERIALIZABLE -> {
+                        if (this.constructors.containsKey(key)) {
+                            ((Consumer<Serializable>) setter).accept(get(nbt, key, this.constructors.get(key)));
+                        } else {
+                            ((Consumer<Serializable>) setter).accept(get(nbt, key, this.functions.get(key)));
+                        }
+                    }
                     case LIST -> {
                         var list = (List<Serializable>) this.getters.get(key).get();
                         nbt.getList(key, 10).stream().map(NbtCompound.class::cast).forEach(n -> list.add(this.constructors.get(key).get().fromNbt(n)));
@@ -164,6 +173,11 @@ public abstract class Serializable {
         public <V extends Serializable> void registerProperty(String key, Supplier<V> getter, Consumer<V> setter, Supplier<V> constructor) {
             this.registerProperty(key, getter, setter, null, SerializableType.SERIALIZABLE);
             constructors.put(key, constructor);
+        }
+
+        public <V extends Serializable> void registerProperty(String key, Supplier<V> getter, Consumer<V> setter, Function<NbtCompound, V> constructor) {
+            this.registerProperty(key, getter, setter, null, SerializableType.SERIALIZABLE);
+            functions.put(key, constructor);
         }
 
         public <V extends Serializable> void registerProperty(String key, Supplier<List<V>> getter, Supplier<V> valueConstructor) {

@@ -16,7 +16,7 @@ import java.util.List;
 public class PersonEntityRenderer extends GeoEntityRenderer<PersonEntity> {
     public PersonEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new PersonEntityModel());
-        scaleHeight = 0.9375f / 2;
+        scaleHeight = 0.9375f;
         scaleWidth = 0.9375f;
     }
 
