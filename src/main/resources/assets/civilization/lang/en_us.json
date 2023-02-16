@@ -1,0 +1,17 @@
+{
+  "text.autoconfig.civilization.title": "Civilization Mod Configs",
+  "text.autoconfig.civilization.category.main": "Main Settings",
+  "text.autoconfig.civilization.category.person_names": "Person Names",
+  "text.autoconfig.civilization.option.personNames.invertedNames": "Invert first and last names",
+  "text.autoconfig.civilization.option.personNames.invertedNames.@Tooltip": "Disabled: John Smith | Enabled: Smith, John",
+  "text.autoconfig.civilization.option.personNames.maleFirstNames": "Male First Names",
+  "text.autoconfig.civilization.option.personNames.maleFirstNames.@Tooltip": "List of possible male first names to be used in the game.",
+  "text.autoconfig.civilization.option.personNames.femaleFirstNames": "Female First Names",
+  "text.autoconfig.civilization.option.personNames.femaleFirstNames.@Tooltip": "List of possible female first names to be used in the game.",
+  "text.autoconfig.civilization.option.personNames.lastNames": "Last Names",
+  "text.autoconfig.civilization.option.personNames.lastNames.@Tooltip": "List of possible last names to be used in the game.",
+  "text.autoconfig.civilization.category.city_names": "City Names",
+  "text.autoconfig.civilization.option.cityNames.cityNames": "City Names",
+  "text.autoconfig.civilization.option.cityNames.cityNames.@Tooltip": "List of possible city names to be used in the game.",
+  "item.civilization.path_wand": "Pathing Wand"
+}

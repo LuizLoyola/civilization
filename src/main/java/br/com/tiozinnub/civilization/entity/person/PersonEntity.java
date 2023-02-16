@@ -56,6 +56,11 @@ public class PersonEntity extends EntityBase implements IGendered {
     }
 
 
+    @Override
+    public boolean cannotDespawn() {
+        return true;
+    }
+
     @SuppressWarnings("UnnecessaryUnicodeEscape")
     public List<Text> getMultilineNameplate() {
         var sbName = new StringBuilder();
@@ -104,10 +109,18 @@ public class PersonEntity extends EntityBase implements IGendered {
 //                sbHunger.append("\uD83C\uDF56");
 //            }
 //        }
+        // int to str
+        // Option 1
+        // String str = Integer.toString(i);
+
+        // Option 2
+        // String str = String.valueOf(i);
 
         return Arrays.stream(new Text[]{
                 Text.of(sbName.toString()),
                 Text.of(sbHealth.toString()),
+                Text.of(getUuidAsString()),
+                Text.of(String.valueOf(getId()))
 //                Text.of(sbHunger.toString()),
                 //Text.of("§00§11§22§33§44§55§66§77§88§99§aa§bb§cc§dd§ee§ff")
         }).toList();
