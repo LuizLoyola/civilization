@@ -184,6 +184,9 @@ public class PathfinderService {
                 var isEnd = neighbor.pos().equals(end);
 
                 if (existingNode == null) {
+                    // is node even close enough to make it worth it?
+                    if (!isEnd && !this.isNodeWorthChecking(neighbor)) continue;
+
                     // this node doesn't exist, add it
                     var neighborNode = this.addNode(thisNode, neighbor, this.calculateStepCost(thisNode, neighbor));
 
@@ -206,6 +209,25 @@ public class PathfinderService {
                     }
                 }
             }
+        }
+
+        private boolean isNodeWorthChecking(Step node) {
+            var distanceStartToEnd = getDistance(start, end);
+
+            var distanceToEnd = getDistance(node.pos(), end);
+            var distanceToStart = getDistance(node.pos(), start);
+
+            // if the distance is too small, just check it
+            var passDistance = 10;
+
+            if (distanceToEnd < passDistance || distanceToStart < passDistance) return true;
+
+            // tolerance is 1.5x the distance from start to end
+            var tolerance = 1.5;
+            distanceStartToEnd *= tolerance;
+
+            // if the distance node to start or node to end is greater than the distance from start to end (adding tolerance), it's not worth checking
+            return distanceToEnd < distanceStartToEnd || distanceToStart < distanceStartToEnd;
         }
 
         private Node getNodeAt(BlockPos pos) {
