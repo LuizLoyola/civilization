@@ -67,6 +67,33 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             northWest = northWest == null ? null : n.add(n.checkWalkDiagonal(nw, nw.north(-1), nw.west(-1)));
         }
 
+        // L DIAGONALS
+
+
+        var nne = pos.east(1).north(2);
+        n.add(n.checkWalkDiagonalL(nne, pos.north(1), pos.north(1).east(1), pos.north(2), pos.east(1), true));
+
+        var nee = pos.east(2).north(1);
+        n.add(n.checkWalkDiagonalL(nee, pos.east(1).north(1), pos.east(1), pos.north(1), pos.east(2), false));
+
+        var see = pos.east(2).south(1);
+        n.add(n.checkWalkDiagonalL(see, pos.east(1), pos.east(1).south(1), pos.east(2), pos.south(1), true));
+
+        var sse = pos.east(1).south(2);
+        n.add(n.checkWalkDiagonalL(sse, pos.south(1).east(1), pos.south(1), pos.east(1), pos.south(2), false));
+
+        var ssw = pos.west(1).south(2);
+        n.add(n.checkWalkDiagonalL(ssw, pos.south(1), pos.south(1).west(1), pos.south(2), pos.west(1), true));
+
+        var sww = pos.west(2).south(1);
+        n.add(n.checkWalkDiagonalL(sww, pos.south(1).west(1), pos.west(1), pos.south(1), pos.west(2), false));
+
+        var nww = pos.west(2).north(1);
+        n.add(n.checkWalkDiagonalL(nww, pos.west(1), pos.west(1).north(1), pos.west(2), pos.north(1), true));
+
+        var nnw = pos.west(1).north(2);
+        n.add(n.checkWalkDiagonalL(nnw, pos.north(1).west(1), pos.north(1), pos.west(1), pos.north(2), false));
+
         return n.nodeList;
     }
 
@@ -140,6 +167,40 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
                 if (isEnoughClearance(left) && isEnoughClearance(right)) return new Step(target.down(), Step.Type.FALL);
 
                 return null;
+            }
+
+            return null;
+        }
+
+        public Step checkWalkDiagonalL(BlockPos target, BlockPos left, BlockPos right, BlockPos leftExtra, BlockPos rightExtra, boolean invertedL) {
+            if (canStandOn(target)) {
+                // left or right must be standable, all others must be passable
+                if ((canStandOn(left) || canStandOn(right)) && isEnoughClearance(left) && isEnoughClearance(right) && isEnoughClearance(leftExtra) && isEnoughClearance(rightExtra))
+                    return new Step(target, Step.Type.WALK);
+            }
+
+            // Currently jumping in L is not possible. Maybe with more complex moving.
+
+//            // can jump from origin block to target.up?
+//            if (canStandOn(origin, 1) && canStandOn(target.up())) {
+//                // if inverted L, then leftExtra is beside target. otherwise, rightExtra is beside target
+//                var extraBesideTarget = invertedL ? leftExtra : rightExtra;
+//                var extraBesideOrigin = invertedL ? rightExtra : leftExtra;
+//
+//                // need clearance on both sides and extra beside origin. also need clearance but one up on extra beside target
+//                if (isEnoughClearance(left, 1) && isEnoughClearance(right, 1) && isEnoughClearance(extraBesideOrigin, 1) && isEnoughClearance(extraBesideTarget.up()))
+//                    return new Step(target.up(), Step.Type.JUMP);
+//            }
+
+            // can fall from origin block to target.down?
+            if (canStandOn(origin) && canStandOn(target.down(), 1)) {
+                // if inverted L, then leftExtra is beside target. otherwise, rightExtra is beside target
+                var extraBesideTarget = invertedL ? leftExtra : rightExtra;
+                var extraBesideOrigin = invertedL ? rightExtra : leftExtra;
+
+                // need clearance under both sides and extra beside target. also need clearance on extra beside origin
+                if (isEnoughClearance(left.down(), 1) && isEnoughClearance(right.down(), 1) && isEnoughClearance(extraBesideTarget.down(), 1) && isEnoughClearance(extraBesideOrigin.up()))
+                    return new Step(target.down(), Step.Type.FALL);
             }
 
             return null;

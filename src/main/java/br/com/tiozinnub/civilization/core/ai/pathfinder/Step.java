@@ -8,7 +8,7 @@ public record Step(BlockPos pos, Type type) {
         START('S', 0),
         WALK('W', 1),
         JUMP('J', 1.5),
-        FALL('F', 0.75);
+        FALL('F', 1);
 
         public final double costMultiplier;
         public final char c;
