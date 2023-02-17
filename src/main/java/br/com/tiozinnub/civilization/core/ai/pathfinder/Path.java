@@ -1,10 +1,10 @@
 package br.com.tiozinnub.civilization.core.ai.pathfinder;
 
 import br.com.tiozinnub.civilization.utils.Serializable;
-import com.google.common.collect.Lists;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static br.com.tiozinnub.civilization.utils.helper.StringHelper.getStringFromBlockPos;
@@ -15,13 +15,13 @@ public class Path extends Serializable {
     private String pathData;
 
     public Path(NbtCompound nbt) {
-        this.steps = Lists.newArrayList();
+        this.steps = new ArrayList<>();
         fromNbt(nbt);
     }
 
     public Path(BlockPos start) {
         this.start = start;
-        this.steps = Lists.newArrayList();
+        this.steps = new ArrayList<>();
         this.pathData = null;
     }
 

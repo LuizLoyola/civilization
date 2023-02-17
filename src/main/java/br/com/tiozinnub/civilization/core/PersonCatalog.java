@@ -1,10 +1,10 @@
 package br.com.tiozinnub.civilization.core;
 
-import com.google.common.collect.Maps;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.PersistentState;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -12,7 +12,7 @@ import static br.com.tiozinnub.civilization.utils.helper.NbtHelper.getHashMapWit
 import static br.com.tiozinnub.civilization.utils.helper.NbtHelper.putHashMapWithInteger;
 
 public class PersonCatalog extends PersistentState {
-    private final Map<UUID, Integer> peopleMap = Maps.newHashMap();
+    private final Map<UUID, Integer> peopleMap = new HashMap<>();
 
     private final ServerWorld serverWorld;
 

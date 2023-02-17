@@ -1,12 +1,12 @@
 package br.com.tiozinnub.civilization.core.ai.pathfinder;
 
-import com.google.common.collect.Sets;
 import net.minecraft.util.math.BlockPos;
-import org.apache.commons.compress.utils.Lists;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getDistance;
 
 public class PathfinderService {
     private final NodeViewer nodeViewer;
@@ -61,11 +61,18 @@ public class PathfinderService {
     public Path tickUntilFind() {
         var startTime = System.currentTimeMillis();
         int maxMsPerWarp = 10;
-        Path path;
+        Path path = null;
+
+        var count = 0;
 
         do {
+            if (pathfinder.cancelled) break;
+
             path = this.tick();
+            count++;
         } while (path == null && System.currentTimeMillis() - startTime < maxMsPerWarp);
+
+        System.out.println("TICKS: " + count + (pathfinder.cancelled ? " GAVE UP" : path == null ? " " + maxMsPerWarp + "ms PASSED" : " DONE"));
 
         return path;
     }
@@ -82,24 +89,16 @@ public class PathfinderService {
         private final HashSet<Integer> closed;
         public Path path;
         private boolean cancelled;
-        private Node currNode;
-        private List<Step> neighbors;
-        private int neighborsIndex;
 
         public Pathfinder(BlockPos start, BlockPos end) {
             this.start = start;
             this.end = end;
 
-            this.nodes = Lists.newArrayList();
-            this.open = Sets.newHashSet();
-            this.closed = Sets.newHashSet();
+            this.nodes = new ArrayList<>();
+            this.open = new HashSet<>();
+            this.closed = new HashSet<>();
 
-            this.open(this.addNode(-1, start, start, Step.Type.START, -1));
-        }
-
-        private int open(int index) {
-            this.open.add(index);
-            return index;
+            this.addNode(null, new Step(start, Step.Type.START), 0);
         }
 
         private void close(int index) {
@@ -115,27 +114,45 @@ public class PathfinderService {
             return this.closed.contains(index);
         }
 
-        private int addNode(int parentIndex, Step step, int overrideIndex) {
-            return this.addNode(parentIndex, step.pos(), this.getNode(parentIndex).pos, step.type(), overrideIndex);
+        private Node addNode(Node parent, Step step, double cost) {
+            return this.addNode(parent, step, cost, -1);
         }
 
-        private int addNode(int parentIndex, BlockPos pos, BlockPos parentBlockPos, Step.Type type, int overrideIndex) {
-            var index = overrideIndex == -1 ? this.nodes.size() : overrideIndex;
-            var node = new Node(index, parentIndex, pos, type, this.calculateCostTo(pos, parentBlockPos, type), this.calculateCostFrom(pos));
-            if (overrideIndex == -1) {
+        private Node addNode(Node parent, Step step, double cost, int at) {
+            var index = at == -1 ? this.nodes.size() : at;
+            var parentCost = parent == null ? 0 : parent.totalCost;
+            var parentIndex = parent == null ? -1 : parent.index();
+            var node = new Node(index, parentIndex, step.pos(), step.type(), cost, parentCost + cost, getDistance(step.pos(), end));
+
+            if (at == -1) {
                 this.nodes.add(node);
             } else {
-                this.nodes.set(overrideIndex, node);
+                this.nodes.set(at, node);
             }
-            return node.index;
+
+            this.open.add(index);
+
+            return node;
         }
 
-        private double calculateCostFrom(BlockPos pos) {
-            return pos.getSquaredDistance(this.end);
+        private double calculateStepCost(Node from, Step to) {
+            return getDistance(from.pos(), to.pos()) * to.type().costMultiplier;
         }
 
-        private double calculateCostTo(BlockPos pos, BlockPos parentBlockPos, Step.Type type) {
-            return parentBlockPos.getSquaredDistance(pos) * type.costMultiplier;
+        private List<Node> getOpenNodes() {
+            var openNodes = new ArrayList<Node>();
+            for (var index : this.open) {
+                openNodes.add(this.getNode(index));
+            }
+            return openNodes;
+        }
+
+        private List<Node> getClosedNodes() {
+            var closedNodes = new ArrayList<Node>();
+            for (var index : this.closed) {
+                closedNodes.add(this.getNode(index));
+            }
+            return closedNodes;
         }
 
         public void cancel() {
@@ -145,52 +162,53 @@ public class PathfinderService {
         private void tick() {
             if (!this.isWorking()) return;
 
-            if (this.neighbors == null || this.neighborsIndex >= this.neighbors.size()) {
-                this.currNode = this.getCheaperOpenNode();
+            var thisNode = this.getClosestOpenNode();
 
-                // no nodes?
-                if (this.currNode == null) {
-                    this.cancel();
-                    return;
-                }
-
-                close(this.currNode.index);
-
-                this.neighbors = nodeViewer.getNeighbors(this.currNode.pos);
-                this.neighborsIndex = 0;
-            }
-
-            var neighbor = this.neighbors.get(this.neighborsIndex++);
-
-            // if this neighbor is 1.25x further than the startup position is from the end position, it's too far
-            if (neighbor.pos().getSquaredDistance(this.start) > this.end.getSquaredDistance(this.start) * 1.25) {
+            if (thisNode == null) {
+                this.cancel();
                 return;
             }
 
-            // if there is a node with the same position as this neighbor: if it's closed, skip it, if it's open, check if it's cheaper and replace it if it is
-            var existingNode = this.nodes.stream().filter(n -> n.pos.equals(neighbor.pos())).findFirst().orElse(null);
-            var overrideIndex = -1;
-            if (existingNode != null) {
-                if (this.isClosed(existingNode.index)) return;
+            var neighbors = nodeViewer.getNeighbors(thisNode.pos);
 
-                if (this.isOpen(existingNode.index)) {
-                    if (existingNode.costTo < this.currNode.costTo) return;
+            close(thisNode.index);
 
-                    overrideIndex = existingNode.index;
+            for (var neighbor : neighbors) {
+                // check if this position is already mapped
+                var existingNode = this.getNodeAt(neighbor.pos());
+                var isEnd = neighbor.pos().equals(end);
+
+                if (existingNode == null) {
+                    // this node doesn't exist, add it
+                    var neighborNode = this.addNode(thisNode, neighbor, this.calculateStepCost(thisNode, neighbor));
+
+                    if (isEnd) {
+                        close(neighborNode.index);
+                        this.path = this.buildPath(neighborNode.index());
+                        return;
+                    }
                 }
-            }
 
-            var neighborIndex = open(addNode(this.currNode.index, neighbor, overrideIndex));
+                if (existingNode != null) {
+                    // existingNode is at the same position as neighbor
+                    // is it better to use existingNode or neighbor?
+                    var existingNodeCost = existingNode.totalCost;
+                    var neighborCost = this.calculateStepCost(thisNode, neighbor) + thisNode.totalCost;
 
-            // can equals be used here?
-            if (neighbor.pos().equals(this.end)) {
-                close(neighborIndex);
-                this.path = this.buildPath(neighborIndex);
+                    if (neighborCost < existingNodeCost) {
+                        // neighbor is better, replace existingNode with neighbor
+                        this.addNode(thisNode, neighbor, this.calculateStepCost(thisNode, neighbor), existingNode.index());
+                    }
+                }
             }
         }
 
+        private Node getNodeAt(BlockPos pos) {
+            return this.nodes.stream().filter(node -> node.pos.equals(pos)).findFirst().orElse(null);
+        }
+
         private Path buildPath(int endNodeIndex) {
-            List<Node> pathNodesInverted = Lists.newArrayList();
+            List<Node> pathNodesInverted = new ArrayList<>();
             var currentNode = this.getNode(endNodeIndex);
             while (currentNode.parentIndex != -1) {
                 pathNodesInverted.add(currentNode);
@@ -210,14 +228,14 @@ public class PathfinderService {
             return this.nodes.get(index);
         }
 
-        private Node getCheaperOpenNode() {
+        private Node getClosestOpenNode() {
             if (this.open.isEmpty()) return null;
 
             var cheaper = this.getNode(this.open.iterator().next());
 
             for (var index : this.open) {
                 var node = this.getNode(index);
-                if (node.cost() < cheaper.cost()) {
+                if (node.distToEnd < cheaper.distToEnd) {
                     cheaper = node;
                 }
             }
@@ -229,14 +247,11 @@ public class PathfinderService {
         }
 
         // TODO: CHANGE TO PRIVATE
-        public record Node(int index, int parentIndex, BlockPos pos, Step.Type type, double costTo, double costFrom) {
+        public record Node(int index, int parentIndex, BlockPos pos, Step.Type type, double stepCost, double totalCost, double distToEnd) {
             public Step asStep() {
                 return new Step(this.pos, this.type);
             }
 
-            public double cost() {
-                return this.costTo + this.costFrom;
-            }
         }
     }
 

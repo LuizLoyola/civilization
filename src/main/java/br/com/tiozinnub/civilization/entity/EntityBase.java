@@ -34,13 +34,14 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
     private final MovementControl movementControl;
     public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
     public boolean isPathfinderSlowTicking = false;
+    private boolean debug = true;
 
 
     protected EntityBase(EntityType<? extends MerchantEntity> entityType, World world) {
         super(entityType, world);
 
         if (world instanceof ServerWorld serverWorld) {
-            this.pathfinderService = new PathfinderService(new WorldNodeViewer(serverWorld));
+            this.pathfinderService = new PathfinderService(new WorldNodeViewer(serverWorld, this));
             this.movementControl = new MovementControl();
         } else {
             // pathfinder is only available on server
@@ -107,8 +108,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
                 }
             }
 
-            // debug
-            if (pfServ.pathfinder != null) {
+            if (this.debug && pfServ.pathfinder != null) {
                 for (var node : pfServ.pathfinder.nodes) {
                     var isOpen = pfServ.pathfinder.isOpen(node.index());
                     var parentPos = (node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos()).toCenterPos();
@@ -130,7 +130,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
         path = this.getMovementControl().path;
 
-        if (path != null) {
+        if (this.debug && path != null) {
             // debug
             var prevPos = this.getBlockPos();
             for (var node : this.getMovementControl().getRemainingSteps()) {
