@@ -148,12 +148,16 @@ public class NbtHelper {
         return min != null && max != null ? new Box(min, max) : defaultValue;
     }
 
-    public static <T extends Serializable> Serializable get(NbtCompound nbt, String key, Supplier<? extends Serializable> valueConstructor) {
+    public static <T extends Serializable> Serializable get(NbtCompound nbt, String key, Supplier<T> valueConstructor) {
         var compound = nbt.getCompound(key);
         return valueConstructor.get().fromNbt(compound);
     }
 
-    public static <T extends Serializable> Serializable get(NbtCompound nbt, String key, Function<NbtCompound, ? extends Serializable> valueConstructor) {
+    public static <T extends Serializable> Serializable get(NbtCompound nbt, String key, Function<NbtCompound, T> valueConstructor) {
+        if (!nbt.contains(key)) {
+            return null;
+        }
+
         var compound = nbt.getCompound(key);
         return valueConstructor.apply(compound);
     }

@@ -2,6 +2,7 @@ package br.com.tiozinnub.civilization.entity;
 
 import br.com.tiozinnub.civilization.core.ai.pathfinder.Path;
 import br.com.tiozinnub.civilization.core.ai.pathfinder.PathfinderService;
+import br.com.tiozinnub.civilization.core.ai.pathfinder.Step;
 import br.com.tiozinnub.civilization.core.ai.pathfinder.WorldNodeViewer;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import br.com.tiozinnub.civilization.utils.helper.ParticleHelper;
@@ -13,6 +14,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -23,15 +25,15 @@ import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 public class EntityBase extends MerchantEntity implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private final PathfinderService pathfinderService;
     private final MovementControl movementControl;
     public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
-
-
-    //    private double pathfinderTickMultiplier = 1f / 5;
-    private double pathfinderTickMultiplier = 5000;
+    public boolean isPathfinderSlowTicking = false;
 
 
     protected EntityBase(EntityType<? extends MerchantEntity> entityType, World world) {
@@ -95,15 +97,29 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         var pfServ = this.getPathfinderService();
 
         if (pfServ.isFindingPath()) {
-            if (this.isPathfinderAutoTicking)
-                pfServ.tickWarp(this.pathfinderTickMultiplier);
+            if (this.isPathfinderAutoTicking) {
+                if (this.isPathfinderSlowTicking) {
+                    if (this.getWorld().getTime() % 5 == 0) {
+                        pfServ.tick();
+                    }
+                } else {
+                    pfServ.tickUntilFind();
+                }
+            }
 
             // debug
-            for (var node : pfServ.pathfinder.nodes) {
-                var isOpen = pfServ.pathfinder.isOpen(node.index());
-                if (isOpen) continue;
-                var parentPos = node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos();
-                ParticleHelper.drawParticleLine(getWorld(), node.pos().toCenterPos(), parentPos.toCenterPos(), ParticleTypes.FLAME, 3d, 5);
+            if (pfServ.pathfinder != null) {
+                for (var node : pfServ.pathfinder.nodes) {
+                    var isOpen = pfServ.pathfinder.isOpen(node.index());
+                    var parentPos = (node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos()).toCenterPos();
+                    var pos = node.pos().toCenterPos();
+                    var particleType = ParticleTypes.FLAME;
+                    if (isOpen) {
+                        particleType = ParticleTypes.SOUL_FIRE_FLAME;
+                        pos = pos.add(0, .5f, 0);
+                    }
+                    ParticleHelper.drawParticleLine(getWorld(), parentPos, pos, particleType, 3d, 5);
+                }
             }
         }
 
@@ -117,7 +133,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         if (path != null) {
             // debug
             var prevPos = this.getBlockPos();
-            for (var node : this.getMovementControl().path.getSteps()) {
+            for (var node : this.getMovementControl().getRemainingSteps()) {
                 var pos = node.pos();
                 ParticleHelper.drawParticleLine(getWorld(), prevPos.toCenterPos(), pos.toCenterPos(), ParticleTypes.CRIT, 3d, 2);
                 prevPos = pos;
@@ -142,8 +158,18 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         return this.movementControl;
     }
 
-    public void togglePathfinderTicker() {
-        this.isPathfinderAutoTicking = !this.isPathfinderAutoTicking;
+    public String togglePathfinderTicker() {
+        if (this.isPathfinderAutoTicking) {
+            this.isPathfinderAutoTicking = false;
+            this.isPathfinderSlowTicking = true;
+            return "Pathfinder is now ticking slowly";
+        } else if (this.isPathfinderSlowTicking) {
+            this.isPathfinderSlowTicking = false;
+            return "Pathfinder is now ticking manually";
+        } else {
+            this.isPathfinderAutoTicking = true;
+            return "Pathfinder is now ticking automatically";
+        }
     }
 
     @Override
@@ -166,11 +192,16 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         this.getPathfinderService().tick();
 //        this.move(MovementType.PLAYER, new Vec3d(0, 1, 0));
 //        this.jump();
+        this.getMoveControl().moveTo(10, 2, 0, 1);
     }
 
     private class MovementControl extends Serializable {
         private Path path;
         private int stepIndex = 0;
+
+        private Step getStep() {
+            return path.getSteps().get(stepIndex);
+        }
 
         @Override
         public void registerProperties(SerializableHelper helper) {
@@ -179,7 +210,30 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         }
 
         public void tick() {
+            if (this.path == null) return;
 
+            // is close enough to current step
+            var distanceToStep = this.getDistanceToStep();
+
+            if (distanceToStep < 0.5) {
+                this.stepIndex++;
+                if (this.stepIndex >= path.getSteps().size()) {
+                    this.path = null;
+                    return;
+                }
+            }
+
+            var stepPos = getStepPos();
+            getMoveControl().moveTo(stepPos.x, stepPos.y, stepPos.z, 0.5f);
+        }
+
+        private double getDistanceToStep() {
+            return getPos().distanceTo(getStepPos());
+        }
+
+        private Vec3d getStepPos() {
+            var step = this.getStep();
+            return step.pos().toCenterPos().add(0, -.5f, 0);
         }
 
         public void clear() {
@@ -193,6 +247,11 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         public void setPath(Path path) {
             this.path = path;
             this.stepIndex = 0;
+        }
+
+        public List<Step> getRemainingSteps() {
+            if (this.path == null) return Collections.emptyList();
+            return this.path.getSteps().subList(this.stepIndex, this.path.getSteps().size());
         }
     }
 }

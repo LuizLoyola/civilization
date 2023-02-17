@@ -27,13 +27,12 @@ public class PathTickerItem extends Item {
         if (!(entity instanceof EntityBase entityBase)) return ActionResult.SUCCESS;
 
         if (user.isSneaking()) {
-            entityBase.togglePathfinderTicker();
-            user.sendMessage(Text.of("Pathfinder is now " + (entityBase.isPathfinderAutoTicking ? "auto ticking" : "manual ticking")), false);
+            user.sendMessage(Text.of(entityBase.togglePathfinderTicker()), false);
         } else {
             if (!entityBase.isPathfinderAutoTicking)
                 entityBase.tickPathfinder();
             else
-                user.sendMessage(Text.of("Pathfinder is auto ticking"), false);
+                user.sendMessage(Text.of("Can't tick pathfinder while auto ticking is enabled"), false);
         }
 
         return ActionResult.SUCCESS;

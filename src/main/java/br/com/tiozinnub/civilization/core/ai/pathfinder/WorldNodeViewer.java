@@ -3,6 +3,7 @@ package br.com.tiozinnub.civilization.core.ai.pathfinder;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class WorldNodeViewer extends PathfinderService.NodeViewer {
@@ -14,13 +15,18 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
 
     @Override
     public List<Step> getNeighbors(BlockPos pos) {
-        return List.of(
-                new Step(pos.up(), Step.Type.WALK),
-                new Step(pos.down(), Step.Type.WALK),
-                new Step(pos.north(), Step.Type.WALK),
-                new Step(pos.south(), Step.Type.WALK),
-                new Step(pos.east(), Step.Type.WALK),
-                new Step(pos.west(), Step.Type.WALK)
-        );
+        var maxDistance = 3;
+        // get all possible positions within maxDistance (ignoring y)
+
+        var neighbors = new ArrayList<Step>();
+        for (int x = -maxDistance; x <= maxDistance; x++) {
+            for (int z = -maxDistance; z <= maxDistance; z++) {
+                var neighborPos = pos.add(x, 0, z);
+                if (neighborPos.equals(pos)) continue;
+                neighbors.add(new Step(neighborPos, Step.Type.WALK));
+            }
+        }
+
+        return neighbors;
     }
 }
