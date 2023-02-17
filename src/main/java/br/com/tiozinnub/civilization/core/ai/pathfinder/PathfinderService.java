@@ -3,6 +3,7 @@ package br.com.tiozinnub.civilization.core.ai.pathfinder;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -87,6 +88,7 @@ public class PathfinderService {
         private final BlockPos end;
         private final HashSet<Integer> open;
         private final HashSet<Integer> closed;
+        private final HashMap<BlockPos, Integer> posMap;
         public Path path;
         private boolean cancelled;
 
@@ -97,6 +99,7 @@ public class PathfinderService {
             this.nodes = new ArrayList<>();
             this.open = new HashSet<>();
             this.closed = new HashSet<>();
+            this.posMap = new HashMap<>();
 
             this.addNode(null, new Step(start, Step.Type.START), 0);
         }
@@ -126,8 +129,10 @@ public class PathfinderService {
 
             if (at == -1) {
                 this.nodes.add(node);
+                this.posMap.put(step.pos(), index);
             } else {
                 this.nodes.set(at, node);
+                this.posMap.put(step.pos(), at);
             }
 
             this.open.add(index);
@@ -204,7 +209,9 @@ public class PathfinderService {
         }
 
         private Node getNodeAt(BlockPos pos) {
-            return this.nodes.stream().filter(node -> node.pos.equals(pos)).findFirst().orElse(null);
+//            return this.nodes.stream().filter(node -> node.pos.equals(pos)).findFirst().orElse(null);
+            var index = this.posMap.get(pos);
+            return index == null ? null : this.getNode(index);
         }
 
         private Path buildPath(int endNodeIndex) {
