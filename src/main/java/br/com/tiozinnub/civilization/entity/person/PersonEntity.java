@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.entity.person;
 
-import br.com.tiozinnub.civilization.entity.EntityBase;
+import br.com.tiozinnub.civilization.entity.PathingEntity;
 import br.com.tiozinnub.civilization.entity.property.Gender;
 import br.com.tiozinnub.civilization.entity.property.IGendered;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
@@ -12,7 +12,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
@@ -29,7 +28,7 @@ import java.util.List;
 
 import static br.com.tiozinnub.civilization.entity.property.Gender.byGender;
 
-public class PersonEntity extends EntityBase implements IGendered {
+public class PersonEntity extends PathingEntity implements IGendered {
 
     private static final TrackedData<NbtCompound> IDENTITY;
 
@@ -40,14 +39,14 @@ public class PersonEntity extends EntityBase implements IGendered {
 
     private boolean registeredOnCatalog = false;
 
-    public PersonEntity(EntityType<? extends MerchantEntity> entityType, World world) {
+    public PersonEntity(EntityType<? extends PathingEntity> entityType, World world) {
         super(entityType, world);
 
         this.startTracking();
     }
 
     public static DefaultAttributeContainer.Builder createPersonAttributes() {
-        return createEntityBaseAttributes();
+        return createPathingEntityAttributes();
     }
 
     @Override

@@ -1,8 +1,6 @@
 package br.com.tiozinnub.civilization.entity;
 
-import br.com.tiozinnub.civilization.core.ai.pathfinder.PathfinderService;
-import br.com.tiozinnub.civilization.core.ai.pathfinder.WalkPace;
-import br.com.tiozinnub.civilization.core.ai.pathfinder.WorldNodeViewer;
+import br.com.tiozinnub.civilization.core.ai.movement.WalkPace;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;
@@ -32,22 +30,14 @@ import static software.bernie.geckolib.constant.DefaultAnimations.*;
 
 public class EntityBase extends MerchantEntity implements GeoEntity {
     private final AnimatableInstanceCache animCache = GeckoLibUtil.createInstanceCache(this);
-    private final PathfinderService pathfinderService;
     private final MovementControl movementControl;
-    public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
-    public boolean isPathfinderSlowTicking = false;
-    private boolean debug = true;
-    private WalkPace pace;
 
     protected EntityBase(EntityType<? extends MerchantEntity> entityType, World world) {
         super(entityType, world);
-
-        if (world instanceof ServerWorld serverWorld) {
-            this.pathfinderService = new PathfinderService(new WorldNodeViewer(serverWorld, this));
+        if (world instanceof ServerWorld) {
             this.movementControl = new MovementControl();
         } else {
-            // pathfinder is only available on server
-            this.pathfinderService = null;
+            // movement control is only available on server
             this.movementControl = null;
         }
     }
@@ -109,101 +99,20 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
     public void tickMovement() {
         super.tickMovement();
 
-        this.updateMolangVariables();
-
         if (isClient()) return;
-
-        var pfServ = this.getPathfinderService();
-
-        if (pfServ.isFindingPath()) {
-            if (this.isPathfinderAutoTicking) {
-                if (this.isPathfinderSlowTicking) {
-                    if (this.getWorld().getTime() % 5 == 0) {
-                        pfServ.tick();
-                    }
-                } else {
-                    pfServ.tickUntilFind();
-                }
-            }
-
-//            if (this.debug && pfServ.pathfinder != null) {
-//                for (var node : pfServ.pathfinder.nodes) {
-//                    var isOpen = pfServ.pathfinder.isOpen(node.index());
-//                    var parentPos = (node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos()).toCenterPos();
-//                    var pos = node.pos().toCenterPos();
-//                    var particleType = ParticleTypes.FLAME;
-//                    if (isOpen) {
-//                        particleType = ParticleTypes.SOUL_FIRE_FLAME;
-//                        pos = pos.add(0, .5f, 0);
-//                    }
-//                    ParticleHelper.drawParticleLine(getWorld(), parentPos, pos, particleType, 3d, 5);
-//                }
-//            }
-        }
-
-        var path = pfServ.getPathAndClear();
-        if (path != null) {
-            this.getMovementControl().followPath(path);
-        }
-
-//        path = this.getMovementControl().path;
-
-        if (this.debug && path != null) {
-            // debug
-            var prevPos = this.getBlockPos();
-//            for (var node : this.getMovementControl().getRemainingSteps()) {
-//                var pos = node.pos();
-//                ParticleHelper.drawParticleLine(getWorld(), prevPos.toCenterPos(), pos.toCenterPos(), ParticleTypes.CRIT, 3d, 2);
-//                prevPos = pos;
-//            }
-        }
 
         this.getMovementControl().tick();
     }
 
-    private void updateMolangVariables() {
-
+    public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook) {
+        this.getMovementControl().walkTo(pos, pace, resetLook);
     }
 
-    public void setMovementTarget(BlockPos pos, WalkPace pace) {
-        this.getMovementControl().stopMove();
-        this.pace = pace;
-        this.getPathfinderService().startPathfinder(this.getBlockPos(), pos);
-
-//        this.getMovementControl().walkTo(pos, pace, true);
-
-//        var closestItem = getWorld().getEntitiesByClass(ItemEntity.class, this.getBoundingBox().expand(5), item -> true).stream().findFirst().orElse(null);
-//        this.getMovementControl().walkTo(pos, pace, false).anchorLook(closestItem, false);
-
-//        var closestPlayer = getWorld().getClosestPlayer(this, 5);
-//        this.getMovementControl().walkTo(pos, pace, false).anchorLook(closestPlayer, false);
-
-//        this.getMovementControl().followPath(path);
-    }
-
-    private PathfinderService getPathfinderService() {
-        if (this.isClient()) throw new IllegalStateException("PathfinderService is only available on server");
-        return this.pathfinderService;
-    }
-
-    private MovementControl getMovementControl() {
+    protected MovementControl getMovementControl() {
         if (this.isClient()) throw new IllegalStateException("MovementControl is only available on server");
         return this.movementControl;
     }
 
-    public String togglePathfinderTicker() {
-        if (this.isPathfinderAutoTicking) {
-            this.isPathfinderAutoTicking = false;
-            this.isPathfinderSlowTicking = true;
-            return "Pathfinder is now ticking slowly";
-        } else if (this.isPathfinderSlowTicking) {
-            this.isPathfinderSlowTicking = false;
-            return "Pathfinder is now ticking manually";
-        } else {
-            this.isPathfinderAutoTicking = true;
-            return "Pathfinder is now ticking automatically";
-        }
-    }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
@@ -219,10 +128,6 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         this.movementControl.toNbt(nbt, "movementControl");
 
         super.writeCustomDataToNbt(nbt);
-    }
-
-    public void tickPathfinder() {
-        this.getPathfinderService().tick();
     }
 
     private class MovementControl extends Serializable {

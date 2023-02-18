@@ -1,5 +1,6 @@
-package br.com.tiozinnub.civilization.core.ai.pathfinder;
+package br.com.tiozinnub.civilization.core.ai.movement.pathing;
 
+import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;

@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.item.debug;
 
-import br.com.tiozinnub.civilization.core.ai.pathfinder.WalkPace;
+import br.com.tiozinnub.civilization.core.ai.movement.WalkPace;
 import br.com.tiozinnub.civilization.entity.person.PersonEntity;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import br.com.tiozinnub.civilization.item.ItemWithData;
@@ -72,7 +72,7 @@ public class PathWandItem extends ItemWithData<PathWandItem.PathWandItemData> {
             return ActionResult.SUCCESS;
         }
 
-        personEntity.setMovementTarget(context.getBlockPos().up(), WalkPace.DEFAULT);
+        personEntity.setMovementTarget(context.getBlockPos().up(), WalkPace.DEFAULT, false);
 
         return ActionResult.SUCCESS;
     }

@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.core.ai.pathfinder;
+package br.com.tiozinnub.civilization.core.ai.movement;
 
 import net.minecraft.util.StringIdentifiable;
 

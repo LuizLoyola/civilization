@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.item.debug;
 
-import br.com.tiozinnub.civilization.entity.EntityBase;
+import br.com.tiozinnub.civilization.entity.PathingEntity;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -24,13 +24,13 @@ public class PathTickerItem extends Item {
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (user.world.isClient()) return ActionResult.SUCCESS;
 
-        if (!(entity instanceof EntityBase entityBase)) return ActionResult.SUCCESS;
+        if (!(entity instanceof PathingEntity pathingEntity)) return ActionResult.SUCCESS;
 
         if (user.isSneaking()) {
-            user.sendMessage(Text.of(entityBase.togglePathfinderTicker()), false);
+            user.sendMessage(Text.of(pathingEntity.togglePathfinderTicker()), false);
         } else {
-            if (!entityBase.isPathfinderAutoTicking)
-                entityBase.tickPathfinder();
+            if (!pathingEntity.isPathfinderAutoTicking)
+                pathingEntity.tickPathfinder();
             else
                 user.sendMessage(Text.of("Can't tick pathfinder while auto ticking is enabled"), false);
         }

@@ -1,5 +1,6 @@
-package br.com.tiozinnub.civilization.core.ai.pathfinder;
+package br.com.tiozinnub.civilization.core.ai.movement.pathing;
 
+import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import br.com.tiozinnub.civilization.entity.EntityBase;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -11,8 +12,6 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
     private final ServerWorld world;
     private final EntityBase entity;
     private final int entityHeight;
-
-    private final int maxCardinalDistance = 3;
 
     public WorldNodeViewer(ServerWorld world, EntityBase entity) {
         this.world = world;
@@ -43,7 +42,9 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         BlockPos south = pos;
         BlockPos west = pos;
 
-        for (int i = 1; i <= maxCardinalDistance; i++) {
+        int maxWalkDist = 3;
+
+        for (int i = 1; i <= maxWalkDist; i++) {
             north = north == null ? null : n.add(n.checkCardinal(north.north()));
             east = east == null ? null : n.add(n.checkCardinal(east.east()));
             south = south == null ? null : n.add(n.checkCardinal(south.south()));
@@ -56,7 +57,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         BlockPos southWest = pos;
         BlockPos northWest = pos;
 
-        for (int i = 1; i <= maxCardinalDistance; i++) {
+        for (int i = 1; i <= maxWalkDist; i++) {
             var ne = pos.east(i).north(i);
             northEast = northEast == null ? null : n.add(n.checkWalkDiagonal(ne, ne.east(-1), ne.north(-1)));
             var se = pos.south(i).east(i);

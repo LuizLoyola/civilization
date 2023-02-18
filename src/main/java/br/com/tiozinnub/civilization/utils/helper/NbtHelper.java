@@ -158,9 +158,13 @@ public class NbtHelper {
     }
 
     public static Vec3d get(NbtCompound nbt, String key, Vec3d defaultValue) {
-        var x = nbt.contains(key + "_x") ? nbt.getDouble(key + "_x") : defaultValue.x;
-        var y = nbt.contains(key + "_y") ? nbt.getDouble(key + "_y") : defaultValue.y;
-        var z = nbt.contains(key + "_z") ? nbt.getDouble(key + "_z") : defaultValue.z;
+        if (!nbt.contains(key + "_x") || !nbt.contains(key + "_y") || !nbt.contains(key + "_z")) {
+            return defaultValue;
+        }
+
+        var x = nbt.getDouble(key + "_x");
+        var y = nbt.getDouble(key + "_y");
+        var z = nbt.getDouble(key + "_z");
         return new Vec3d(x, y, z);
     }
 
