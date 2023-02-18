@@ -5,15 +5,15 @@ import net.minecraft.util.StringIdentifiable;
 import java.util.Locale;
 
 public enum WalkPace implements StringIdentifiable {
-    SNEAKY(0.4625d),
-    SLOW(0.6d),
-    DEFAULT(0.85d),
-    RUN(1d),
-    RUN_JUMP(1d);
+    SNEAKY(0.4625f),
+    SLOW(0.6f),
+    DEFAULT(1f),
+    RUN(1.5f),
+    RUN_JUMP(1.5f);
 
-    private final double speed;
+    private final float speed;
 
-    WalkPace(double speed) {
+    WalkPace(float speed) {
         this.speed = speed;
     }
 
@@ -21,7 +21,7 @@ public enum WalkPace implements StringIdentifiable {
         return valueOf(name.toUpperCase(Locale.ROOT));
     }
 
-    public double getSpeed() {
+    public float getSpeed() {
         return this.speed;
     }
 

@@ -1,13 +1,18 @@
 package br.com.tiozinnub.civilization.entity;
 
+import br.com.tiozinnub.civilization.core.ai.movement.Step;
+import br.com.tiozinnub.civilization.core.ai.movement.WalkPace;
 import br.com.tiozinnub.civilization.core.ai.movement.pathing.Path;
 import br.com.tiozinnub.civilization.core.ai.movement.pathing.PathfinderService;
 import br.com.tiozinnub.civilization.core.ai.movement.pathing.WorldNodeViewer;
 import br.com.tiozinnub.civilization.utils.Serializable;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public abstract class PathingEntity extends EntityBase {
@@ -16,6 +21,8 @@ public abstract class PathingEntity extends EntityBase {
     public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
     public boolean isPathfinderSlowTicking = false;
     private boolean debug = true;
+    private WalkPace nextTargetPace;
+    private boolean nextTargetResetLook;
 
     protected PathingEntity(EntityType<? extends EntityBase> entityType, World world) {
         super(entityType, world);
@@ -114,14 +121,14 @@ public abstract class PathingEntity extends EntityBase {
 
         var path = pfServ.getPathAndClear();
         if (path != null) {
-            this.getPathFollower().followPath(path);
+            this.getPathFollower().followPath(path, nextTargetPace, nextTargetResetLook);
         }
 
 //        path = this.getMovementControl().path;
 
         if (this.debug && path != null) {
             // debug
-            var prevPos = this.getBlockPos();
+//            var prevPos = this.getBlockPos();
 //            for (var node : this.getMovementControl().getRemainingSteps()) {
 //                var pos = node.pos();
 //                ParticleHelper.drawParticleLine(getWorld(), prevPos.toCenterPos(), pos.toCenterPos(), ParticleTypes.CRIT, 3d, 2);
@@ -129,25 +136,89 @@ public abstract class PathingEntity extends EntityBase {
 //            }
         }
 
-
+        this.getPathFollower().tick();
     }
+
+    public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook) {
+        this.getPathfinderService().startPathfinder(getBlockPos(), pos);
+        this.nextTargetPace = pace;
+        this.nextTargetResetLook = resetLook;
+    }
+
 
     private class PathFollower extends Serializable {
         private Path path;
+        private WalkPace pace;
+        private int stepIndex;
+        private Step currentStep;
+        private int stepTime;
 
         @Override
         public void registerProperties(SerializableHelper helper) {
 
         }
 
-        public void followPath(Path path) {
+        public void followPath(Path path, WalkPace pace, boolean resetLook) {
+            this.finishPath();
             this.path = path;
+            this.pace = pace;
+
+            if (resetLook) {
+                getMovementControl().stopLook();
+            }
         }
 
         public void tick() {
             if (this.path == null) return;
 
-            
+            if (this.currentStep == null) {
+                this.goToNextStep();
+                return;
+            } else {
+                this.stepTime++;
+            }
+
+            var distance = getPos().distanceTo(Vec3d.ofBottomCenter(this.currentStep.pos()));
+
+            var isLastStep = this.stepIndex >= this.path.getSteps().size();
+
+            if (isLastStep) {
+                // let it get closer to target
+                if (distance < 0.25f) {
+                    this.finishPath();
+                }
+            } else {
+                if (distance < 1) {
+                    this.goToNextStep();
+                }
+            }
+        }
+
+        private void goToNextStep() {
+            this.stepIndex++;
+
+            if (this.stepIndex >= this.path.getSteps().size()) {
+                this.finishPath();
+                return;
+            }
+
+            this.currentStep = this.path.getSteps().get(this.stepIndex);
+            this.stepTime = 0;
+
+            if (this.pace == WalkPace.SNEAKY) {
+                setPose(EntityPose.CROUCHING);
+            } else {
+                setPose(EntityPose.STANDING);
+            }
+
+            getMovementControl().walkTo(this.currentStep.pos(), this.pace, false);
+        }
+
+        private void finishPath() {
+            this.path = null;
+            this.currentStep = null;
+            this.stepIndex = -1;
+            this.stepTime = 0;
         }
     }
 }

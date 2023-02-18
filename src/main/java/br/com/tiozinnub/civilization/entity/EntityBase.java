@@ -5,8 +5,10 @@ import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -40,11 +42,17 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             // movement control is only available on server
             this.movementControl = null;
         }
+
+        this.moveControl = new CustomMoveControl(this);
     }
 
     public static DefaultAttributeContainer.Builder createEntityBaseAttributes() {
         return createMobAttributes()
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.375);
+    }
+
+    public CustomMoveControl getMoveControl() {
+        return (CustomMoveControl) super.getMoveControl();
     }
 
     @Override
@@ -104,10 +112,6 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         this.getMovementControl().tick();
     }
 
-    public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook) {
-        this.getMovementControl().walkTo(pos, pace, resetLook);
-    }
-
     protected MovementControl getMovementControl() {
         if (this.isClient()) throw new IllegalStateException("MovementControl is only available on server");
         return this.movementControl;
@@ -130,7 +134,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         super.writeCustomDataToNbt(nbt);
     }
 
-    private class MovementControl extends Serializable {
+    protected class MovementControl extends Serializable {
         private BlockPos targetBlock;
         private WalkPace pace;
         private long startTime;
@@ -224,7 +228,8 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
                 // look at walk target
 
                 // look a bit down unless we are close to the target
-                var yOffset = getDistanceToTarget() < 1d ? 0d : -.5d;
+//                var yOffset = getDistanceToTarget() < 1d ? 0d : -.5d;
+                var yOffset = 0d;
 
                 this.lookPos = this.targetPos.add(0, yOffset, 0);
 
@@ -252,7 +257,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             var forwardsSpeed = (float) Math.cos(yawDiff);
             var sidewaysSpeed = (float) -Math.sin(yawDiff);
 
-            getMoveControl().strafeTo(forwardsSpeed, sidewaysSpeed);
+            getMoveControl().strafeTo(forwardsSpeed, sidewaysSpeed, pace.getSpeed());
         }
 
         private void stopStrafe() {
@@ -300,6 +305,18 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
         public void setLookEntityId(UUID lookEntityId) {
             this.lookEntityId = lookEntityId;
+        }
+    }
+
+    protected class CustomMoveControl extends MoveControl {
+
+        public CustomMoveControl(MobEntity entity) {
+            super(entity);
+        }
+
+        public void strafeTo(float forward, float sideways, float speed) {
+            super.strafeTo(forward, sideways);
+            this.speed *= speed;
         }
     }
 }
