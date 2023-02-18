@@ -5,6 +5,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +47,14 @@ public class NbtHelper {
         nbt.putLong(key, value);
     }
 
+    public static void put(NbtCompound nbt, String key, Float value) {
+        nbt.putFloat(key, value);
+    }
+
+    public static void put(NbtCompound nbt, String key, Double value) {
+        nbt.putDouble(key, value);
+    }
+
     public static void put(NbtCompound nbt, String key, String value) {
         nbt.putString(key, value);
     }
@@ -60,6 +69,12 @@ public class NbtHelper {
 
     public static void put(NbtCompound nbt, String key, BlockPos value) {
         nbt.putLong(key, value.asLong());
+    }
+
+    public static void put(NbtCompound nbt, String key, Vec3d value) {
+        nbt.putDouble(key + "_x", value.x);
+        nbt.putDouble(key + "_y", value.y);
+        nbt.putDouble(key + "_z", value.z);
     }
 
     public static void put(NbtCompound nbt, String key, Box value) {
@@ -110,6 +125,14 @@ public class NbtHelper {
         return nbt.contains(key) ? nbt.getInt(key) : defaultValue;
     }
 
+    public static Float get(NbtCompound nbt, String key, Float defaultValue) {
+        return nbt.contains(key) ? nbt.getFloat(key) : defaultValue;
+    }
+
+    public static Double get(NbtCompound nbt, String key, Double defaultValue) {
+        return nbt.contains(key) ? nbt.getDouble(key) : defaultValue;
+    }
+
     public static Boolean get(NbtCompound nbt, String key, Boolean defaultValue) {
         return nbt.contains(key) ? nbt.getBoolean(key) : defaultValue;
     }
@@ -132,6 +155,13 @@ public class NbtHelper {
 
     public static BlockPos get(NbtCompound nbt, String key, BlockPos defaultValue) {
         return nbt.contains(key) ? BlockPos.fromLong(nbt.getLong(key)) : defaultValue;
+    }
+
+    public static Vec3d get(NbtCompound nbt, String key, Vec3d defaultValue) {
+        var x = nbt.contains(key + "_x") ? nbt.getDouble(key + "_x") : defaultValue.x;
+        var y = nbt.contains(key + "_y") ? nbt.getDouble(key + "_y") : defaultValue.y;
+        var z = nbt.contains(key + "_z") ? nbt.getDouble(key + "_z") : defaultValue.z;
+        return new Vec3d(x, y, z);
     }
 
     public static UUID get(NbtCompound nbt, String key, UUID defaultValue) {

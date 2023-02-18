@@ -5,6 +5,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -55,9 +56,13 @@ public abstract class Serializable {
 
             switch (type) {
                 case INTEGER -> Optional.ofNullable((Integer) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case LONG -> Optional.ofNullable((Long) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case FLOAT -> Optional.ofNullable((Float) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case DOUBLE -> Optional.ofNullable((Double) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case STRING -> Optional.ofNullable((String) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case BOOLEAN -> Optional.ofNullable((Boolean) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case BLOCK_POS -> Optional.ofNullable((BlockPos) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case VEC_3D -> Optional.ofNullable((Vec3d) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case DIRECTION -> Optional.ofNullable((Direction) getter.get()).ifPresent(value -> put(nbt, key, value));
 //                case CARDINAL_DIRECTION -> Optional.ofNullable((CardinalDirection) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case UUID -> Optional.ofNullable((UUID) getter.get()).ifPresent(value -> put(nbt, key, value));
@@ -98,9 +103,13 @@ public abstract class Serializable {
 
                 switch (type) {
                     case INTEGER -> ((Consumer<Integer>) setter).accept(get(nbt, key, (Integer) this.defaultValues.get(key)));
+                    case LONG -> ((Consumer<Long>) setter).accept(get(nbt, key, (Long) this.defaultValues.get(key)));
+                    case FLOAT -> ((Consumer<Float>) setter).accept(get(nbt, key, (Float) this.defaultValues.get(key)));
+                    case DOUBLE -> ((Consumer<Double>) setter).accept(get(nbt, key, (Double) this.defaultValues.get(key)));
                     case STRING -> ((Consumer<String>) setter).accept(get(nbt, key, (String) this.defaultValues.get(key)));
                     case BOOLEAN -> ((Consumer<Boolean>) setter).accept(get(nbt, key, (Boolean) this.defaultValues.get(key)));
                     case BLOCK_POS -> ((Consumer<BlockPos>) setter).accept(get(nbt, key, (BlockPos) this.defaultValues.get(key)));
+                    case VEC_3D -> ((Consumer<Vec3d>) setter).accept(get(nbt, key, (Vec3d) this.defaultValues.get(key)));
                     case DIRECTION -> ((Consumer<Direction>) setter).accept(get(nbt, key, (Direction) this.defaultValues.get(key), Direction::byName));
 //                    case CARDINAL_DIRECTION -> ((Consumer<CardinalDirection>) setter).accept(get(nbt, key, (CardinalDirection) this.defaultValues.get(key), CardinalDirection::byName));
                     case UUID -> ((Consumer<UUID>) setter).accept(get(nbt, key, (UUID) this.defaultValues.get(key)));
@@ -138,8 +147,24 @@ public abstract class Serializable {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BLOCK_POS);
         }
 
+        public void registerProperty(String key, Supplier<Vec3d> getter, Consumer<Vec3d> setter, Vec3d defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.VEC_3D);
+        }
+
         public void registerProperty(String key, Supplier<Integer> getter, Consumer<Integer> setter, int defaultValue) {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.INTEGER);
+        }
+
+        public void registerProperty(String key, Supplier<Long> getter, Consumer<Long> setter, long defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.LONG);
+        }
+
+        public void registerProperty(String key, Supplier<Float> getter, Consumer<Float> setter, float defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.FLOAT);
+        }
+
+        public void registerProperty(String key, Supplier<Double> getter, Consumer<Double> setter, double defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.DOUBLE);
         }
 
         public void registerProperty(String key, Supplier<String> getter, Consumer<String> setter, String defaultValue) {

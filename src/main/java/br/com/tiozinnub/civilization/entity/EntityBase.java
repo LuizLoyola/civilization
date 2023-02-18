@@ -7,7 +7,6 @@ import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.passive.MerchantEntity;
@@ -16,7 +15,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.world.World;
@@ -29,8 +27,8 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.UUID;
 
-import static software.bernie.geckolib.constant.DefaultAnimations.RUN;
-import static software.bernie.geckolib.constant.DefaultAnimations.WALK;
+import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.yawBetween;
+import static software.bernie.geckolib.constant.DefaultAnimations.*;
 
 public class EntityBase extends MerchantEntity implements GeoEntity {
     private final AnimatableInstanceCache animCache = GeckoLibUtil.createInstanceCache(this);
@@ -73,11 +71,11 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(
                 new AnimationController<>(this, "Walk/Run/Idle", 5, state -> {
-                    return state.setAndContinue(isSprinting() ? RUN : WALK);
-//                    if (state.isMoving()) {
-//                    } else {
-//                        return state.setAndContinue(IDLE);
-//                    }
+                    if (state.isMoving()) {
+                        return state.setAndContinue(isSprinting() ? RUN : WALK);
+                    } else {
+                        return state.setAndContinue(IDLE);
+                    }
                 })
         );
     }
@@ -145,7 +143,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
         var path = pfServ.getPathAndClear();
         if (path != null) {
-//            this.getMovementControl().setPath(path);
+            this.getMovementControl().followPath(path);
         }
 
 //        path = this.getMovementControl().path;
@@ -172,10 +170,15 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         this.pace = pace;
         this.getPathfinderService().startPathfinder(this.getBlockPos(), pos);
 
-        var closestItem = getWorld().getEntitiesByClass(ItemEntity.class, this.getBoundingBox().expand(5), item -> true).stream().findFirst().orElse(null);
-
 //        this.getMovementControl().walkTo(pos, pace, true);
-        this.getMovementControl().walkTo(pos, pace, false).anchorLook(closestItem, false);
+
+//        var closestItem = getWorld().getEntitiesByClass(ItemEntity.class, this.getBoundingBox().expand(5), item -> true).stream().findFirst().orElse(null);
+//        this.getMovementControl().walkTo(pos, pace, false).anchorLook(closestItem, false);
+
+//        var closestPlayer = getWorld().getClosestPlayer(this, 5);
+//        this.getMovementControl().walkTo(pos, pace, false).anchorLook(closestPlayer, false);
+
+//        this.getMovementControl().followPath(path);
     }
 
     private PathfinderService getPathfinderService() {
@@ -232,10 +235,20 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         private Vec3d lookPos;
         private UUID lookEntityId;
         private boolean isWalking;
+        private boolean hasLookAnchor;
 
         @Override
         public void registerProperties(SerializableHelper helper) {
-
+            helper.registerProperty("targetBlock", () -> this.targetBlock, (value) -> this.targetBlock = value, null);
+            helper.registerProperty("pace", () -> this.pace.asString(), (value) -> this.pace = WalkPace.fromString(value), null);
+            helper.registerProperty("startTime", () -> this.startTime, (value) -> this.startTime = value, 0);
+            helper.registerProperty("walkTicks", () -> this.walkTicks, (value) -> this.walkTicks = value, 0);
+            helper.registerProperty("targetPos", () -> this.targetPos, (value) -> this.targetPos = value, null);
+            helper.registerProperty("resetLookWhenStop", () -> this.resetLookWhenStop, (value) -> this.resetLookWhenStop = value, false);
+            helper.registerProperty("lookPos", () -> this.lookPos, (value) -> this.lookPos = value, null);
+            helper.registerProperty("lookEntityId", () -> this.lookEntityId, (value) -> this.lookEntityId = value, null);
+            helper.registerProperty("isWalking", () -> this.isWalking, (value) -> this.isWalking = value, false);
+            helper.registerProperty("hasLookAnchor", () -> this.hasLookAnchor, (value) -> this.hasLookAnchor = value, false);
         }
 
         public MovementControl walkTo(BlockPos pos, WalkPace pace, boolean resetLook) {
@@ -254,15 +267,17 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         }
 
         public MovementControl anchorLook(Vec3d lookTarget, boolean resetWhenDone) {
+            this.hasLookAnchor = lookTarget != null;
             this.lookPos = lookTarget;
-            this.resetLookWhenStop = resetWhenDone;
+            this.resetLookWhenStop = lookTarget != null && resetWhenDone;
 
             return this;
         }
 
         public MovementControl anchorLook(Entity lookTarget, boolean resetWhenDone) {
+            this.hasLookAnchor = lookTarget != null;
             this.setLookEntity(lookTarget);
-            this.resetLookWhenStop = resetWhenDone;
+            this.resetLookWhenStop = lookTarget != null && resetWhenDone;
 
             return this;
         }
@@ -283,34 +298,32 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             this.tickMove();
         }
 
-        private boolean getHasLookAnchor() {
-            return this.lookPos != null || this.lookEntityId != null;
-        }
-
         private void tickLook() {
-            if (getHasLookAnchor()) {
-                Vec3d pos;
-                if (lookPos != null)
-                    pos = this.lookPos;
-                else {
-                    var entity = this.getLookEntity();
-
-                    if (entity == null) {
+            if (this.hasLookAnchor) {
+                if (this.lookEntityId != null) {
+                    var lookEntity = getLookEntity();
+                    if (lookEntity == null) {
                         this.stopLook();
-                        return;
+                    } else {
+                        this.lookPos = lookEntity.getEyePos();
                     }
-
-                    pos = entity.getPos().add(0, entity.getEyeY(), 0);
                 }
 
-                this.lookAt(pos, true);
-            } else if (this.isWalking) {
+                if (this.lookPos != null) {
+                    this.lookAt(this.lookPos, true);
+                    return;
+                }
+            }
+
+            if (this.isWalking) {
                 // look at walk target
 
                 // look a bit down unless we are close to the target
                 var yOffset = getDistanceToTarget() < 1d ? 0d : -.5d;
 
-                this.lookAt(this.targetPos.add(0, yOffset, 0), false);
+                this.lookPos = this.targetPos.add(0, yOffset, 0);
+
+                this.lookAt(this.lookPos, false);
             }
         }
 
@@ -318,13 +331,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             if (this.targetBlock == null) return;
             this.walkTicks++;
 
-            if (!getHasLookAnchor()) {
-                // no anchor, just walk forward
-                this.walkForward();
-            } else {
-                // get angle and calculate how much forwards and sideways we should go
-                this.strafeTo(this.targetPos);
-            }
+            this.strafeTo(this.targetPos);
 
             if (getDistanceToTarget() < 0.25d) {
                 this.stopMove();
@@ -332,26 +339,19 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         }
 
         private void strafeTo(Vec3d targetPos) {
-            // get angle we are looking at through look target and current position and throwing math at it
-            var yaw = (float) Math.toDegrees(Math.atan2(targetPos.z - getPos().z, targetPos.x - getPos().x)) - 90f;
+            var yaw = yawBetween(getPos(), this.lookPos);
+            var yawToTarget = yawBetween(getPos(), targetPos);
 
-            var forwardsSpeed = 1f;
+            var yawDiff = yaw - yawToTarget;
 
-            // how much speed we should take from the forwards speed and put into the sideways speed depending on the angle?
-            var sidewaysSpeed = Math.abs(MathHelper.wrapDegrees(yaw - getHeadYaw())) / 90f;
-
-            forwardsSpeed *= 1f - sidewaysSpeed;
-
-            // if we are looking backwards, we should go backwards
-            if (Math.abs(MathHelper.wrapDegrees(yaw - getHeadYaw())) > 90f) {
-                forwardsSpeed *= -1f;
-            }
+            var forwardsSpeed = (float) Math.cos(yawDiff);
+            var sidewaysSpeed = (float) -Math.sin(yawDiff);
 
             getMoveControl().strafeTo(forwardsSpeed, sidewaysSpeed);
         }
 
-        private void walkForward() {
-            getMoveControl().strafeTo(1f, 0);
+        private void stopStrafe() {
+            getMoveControl().strafeTo(0, 0);
         }
 
         private void lookAt(Vec3d target, boolean isExact) {
@@ -359,6 +359,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         }
 
         public MovementControl stopMove() {
+            this.stopStrafe();
             this.isWalking = false;
             this.targetPos = null;
             this.targetBlock = null;
@@ -375,6 +376,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             this.lookPos = null;
             this.setLookEntity(null);
             this.resetLookWhenStop = false;
+            this.hasLookAnchor = false;
 
             return this;
         }
@@ -384,7 +386,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         }
 
         public void setLookEntity(Entity lookEntity) {
-            this.lookEntityId = lookEntity == null ? null : lookEntity.getUuid();
+            this.setLookEntityId(lookEntity == null ? null : lookEntity.getUuid());
         }
 
         private ServerWorld getWorld() {
