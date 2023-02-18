@@ -48,6 +48,7 @@ public class PersonEntityRenderer extends GeoEntityRenderer<PersonEntity> {
         //super.renderLabelIfPresent(personEntity, text, matrixStack, vertexConsumerProvider, light);
     }
 
+
     private void drawLabel(Text text, boolean sneaky, float height, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
         matrices.push();
         matrices.translate(0.0F, height, 0.0F);

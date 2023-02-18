@@ -5,16 +5,18 @@ import net.minecraft.util.math.BlockPos;
 public record Step(BlockPos pos, Type type) {
     public enum Type {
 
-        START('S', 0),
-        WALK('W', 1),
-        JUMP('J', 1.5),
-        FALL('F', 1);
+        START('S', true, 0),
+        WALK('W', true, 1),
+        JUMP('J', true, 1.5),
+        FALL('F', true, 1);
 
         public final double costMultiplier;
         public final char c;
+        private final boolean requiresJump;
 
-        Type(char c, double costMultiplier) {
+        Type(char c, boolean requiresJump, double costMultiplier) {
             this.c = c;
+            this.requiresJump = requiresJump;
             this.costMultiplier = costMultiplier;
         }
 
@@ -25,6 +27,10 @@ public record Step(BlockPos pos, Type type) {
                 }
             }
             return null;
+        }
+
+        public boolean requiresJump() {
+            return this.requiresJump;
         }
     }
 }

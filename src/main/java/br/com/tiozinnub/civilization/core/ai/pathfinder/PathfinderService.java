@@ -101,6 +101,13 @@ public class PathfinderService {
             this.closed = new HashSet<>();
             this.posMap = new HashMap<>();
 
+            if (start.equals(end)) {
+                this.path = new Path(start);
+                this.path.addStep(new Step(start, Step.Type.START));
+                this.path.addStep(new Step(start, Step.Type.WALK));
+                return;
+            }
+
             this.addNode(null, new Step(start, Step.Type.START), 0);
         }
 

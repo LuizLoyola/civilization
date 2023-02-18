@@ -22,7 +22,7 @@ public class Entities {
     }
 
     public static void register() {
-        FabricDefaultAttributeRegistry.register(Entities.PERSON, PersonEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(Entities.PERSON, PersonEntity.createPersonAttributes());
     }
 
     public static void registerClient() {

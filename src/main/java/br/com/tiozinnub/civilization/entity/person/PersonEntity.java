@@ -46,8 +46,8 @@ public class PersonEntity extends EntityBase implements IGendered {
         this.startTracking();
     }
 
-    public static DefaultAttributeContainer.Builder createAttributes() {
-        return EntityBase.createMobAttributes(); // TODO
+    public static DefaultAttributeContainer.Builder createPersonAttributes() {
+        return createEntityBaseAttributes();
     }
 
     @Override
@@ -151,9 +151,9 @@ public class PersonEntity extends EntityBase implements IGendered {
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         if (getWorld().isClient()) return ActionResult.SUCCESS;
 
-        player.sendMessage(Text.of(getUuidAsString()), false);
-        player.sendMessage(Text.of(getUuid().toString()), false);
-        player.sendMessage(Text.of(String.valueOf(getId())), false);
+//        player.sendMessage(Text.of(getUuidAsString()), false);
+//        player.sendMessage(Text.of(getUuid().toString()), false);
+//        player.sendMessage(Text.of(String.valueOf(getId())), false);
 
         return ActionResult.PASS;
     }
