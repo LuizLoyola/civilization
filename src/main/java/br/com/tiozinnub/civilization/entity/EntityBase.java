@@ -202,6 +202,12 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             return this.targetBlock.distanceTo(getPos());
         }
 
+        private double getDistanceToTargetIgnoreY() {
+            var pos = getPos();
+            pos = new Vec3d(pos.x, this.targetBlock.y, pos.z);
+            return this.targetBlock.distanceTo(pos);
+        }
+
         public void tick() {
             this.tickLook();
             this.tickMove();
@@ -243,7 +249,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
             this.strafeTo(this.targetBlock);
 
-            if (this.targetBlock.getY() - getPos().getY() > getStepHeight()) {
+            if (this.targetBlock.getY() - getPos().getY() > getStepHeight() && getDistanceToTargetIgnoreY() < 1d) {
                 this.jump();
             }
 

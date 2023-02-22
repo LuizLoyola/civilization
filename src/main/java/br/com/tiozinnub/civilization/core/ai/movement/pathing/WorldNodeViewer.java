@@ -101,7 +101,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         var refPos = Vec3d.ofBottomCenter(new BlockPos(pos));
 
         var p = refPos;
-        while (world.isAir(new BlockPos(p))) {
+        while (isAir(p)) {
             p = p.add(PositionHelper.down());
 
             // somehow, the block is on the void
@@ -120,6 +120,16 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         checkCardinals(refPos, maxWalkDist, n);
 
         return n.nodeList;
+    }
+
+    private boolean isAir(Vec3d pos) {
+        var blockPos = new BlockPos(pos);
+        if (world.isAir(blockPos)) return true;
+
+        var blockState = world.getBlockState(blockPos);
+        var voxelShape = blockState.getCollisionShape(world, blockPos);
+
+        return voxelShape.isEmpty();
     }
 
     private class NodeFinder {
@@ -141,12 +151,21 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             if (canStandOn(pos)) return new Step(from, pos);
 
             // can jump from origin block to toPos.up?
-            if (canStandOn(origin, 1) && canStandOn(pos.add(PositionHelper.up()))) return new Step(from, pos.add(PositionHelper.up()));
+            if (canStandOn(origin, 1) && canStandOn(pos.add(PositionHelper.up()))) {
+                if (canJumpOver(pos))
+                    return new Step(from, pos.add(PositionHelper.up()));
+            }
 
             // can fall from origin block to toPos.down?
             if (canStandOn(origin) && canStandOn(pos.add(PositionHelper.down()), 1)) return new Step(from, pos.add(PositionHelper.down()));
 
             return null;
+        }
+
+        public boolean canJumpOver(Vec3d pos) {
+            var topSolidHeight = getSolidTopHeight(pos);
+
+            return topSolidHeight != -1 && topSolidHeight <= 1d;
         }
 
         private boolean canStandOn(Vec3d target) {
@@ -164,7 +183,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
 
         private boolean isEnoughClearance(Vec3d target, int extraClearance) {
             for (int i = 0; i < entity.getHeight() + extraClearance; i++)
-                if (!world.isAir(new BlockPos(target).up(i)))
+                if (!isAir(target.add(up(i))))
                     return isEnoughClearanceWithStep(target, extraClearance);
             return true;
         }
@@ -176,14 +195,16 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             if (topHeight > entity.getStepHeight() || topHeight == 0) return false;
 
             for (int i = 1; i < entity.getHeight() + extraClearance; i++)
-                if (!world.isAir(new BlockPos(target).up(i)))
+                if (!isAir(target.add(up(i))))
                     return false;
 
             return true;
         }
 
         private boolean isTopSolid(Vec3d target) {
-            return world.isTopSolid(new BlockPos(target), entity) || getSolidTopHeight(target) >= 0.75d;
+            if (world.isTopSolid(new BlockPos(target), entity)) return true;
+            var solidTopHeight = getSolidTopHeight(target);
+            return solidTopHeight >= 0.75d && solidTopHeight <= 1d;
         }
 
         private double getSolidTopHeight(Vec3d target) {
@@ -211,7 +232,10 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             // can jump from origin block to target.up?
             if (canStandOn(origin, 1) && canStandOn(target.add(PositionHelper.up()))) {
                 // need clearance on both sides, but ignore the bottom block
-                if (isEnoughClearance(left.add(PositionHelper.up())) && isEnoughClearance(right.add(PositionHelper.up()))) return new Step(from, target.add(PositionHelper.up()));
+                if (isEnoughClearance(left.add(PositionHelper.up())) && isEnoughClearance(right.add(PositionHelper.up()))) {
+                    if (canJumpOver(target))
+                        return new Step(from, target.add(PositionHelper.up()));
+                }
 
                 return null;
             }

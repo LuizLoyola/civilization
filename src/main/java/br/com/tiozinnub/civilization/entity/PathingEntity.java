@@ -195,7 +195,7 @@ public abstract class PathingEntity extends EntityBase {
                     this.finishPath();
                 }
             } else {
-                if (distance < 1) {
+                if (distance < 0.75f) {
                     this.goToNextStep();
                 }
             }
