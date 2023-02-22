@@ -9,7 +9,7 @@ public enum SerializableType {
     BOOLEAN,
     BLOCK_POS,
     VEC_3D,
-    DIRECTION,
+    STRING_IDENTIFIABLE,
     CARDINAL_DIRECTION,
     UUID,
     BYTE,

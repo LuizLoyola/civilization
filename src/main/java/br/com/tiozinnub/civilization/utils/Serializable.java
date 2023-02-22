@@ -2,9 +2,9 @@ package br.com.tiozinnub.civilization.utils;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
@@ -22,6 +22,7 @@ public abstract class Serializable {
     private final Map<String, Consumer<?>> setters;
     private final Map<String, Object> defaultValues;
     private final Map<String, Supplier<? extends Serializable>> constructors;
+    private final Map<String, Function<String, ? extends StringIdentifiable>> parsers;
     private final Map<String, Function<NbtCompound, ? extends Serializable>> functions;
 
     public Serializable() {
@@ -30,6 +31,7 @@ public abstract class Serializable {
         this.setters = new HashMap<>();
         this.defaultValues = new HashMap<>();
         this.constructors = new HashMap<>();
+        this.parsers = new HashMap<>();
         this.functions = new HashMap<>();
         var helper = new SerializableHelper();
         this.registerProperties(helper);
@@ -63,8 +65,7 @@ public abstract class Serializable {
                 case BOOLEAN -> Optional.ofNullable((Boolean) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case BLOCK_POS -> Optional.ofNullable((BlockPos) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case VEC_3D -> Optional.ofNullable((Vec3d) getter.get()).ifPresent(value -> put(nbt, key, value));
-                case DIRECTION -> Optional.ofNullable((Direction) getter.get()).ifPresent(value -> put(nbt, key, value));
-//                case CARDINAL_DIRECTION -> Optional.ofNullable((CardinalDirection) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case STRING_IDENTIFIABLE -> Optional.ofNullable((StringIdentifiable) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case UUID -> Optional.ofNullable((UUID) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case BYTE -> Optional.ofNullable((Byte) getter.get()).ifPresent(value -> put(nbt, key, value));
                 case BOX -> Optional.ofNullable((Box) getter.get()).ifPresent(value -> put(nbt, key, value));
@@ -110,8 +111,8 @@ public abstract class Serializable {
                     case BOOLEAN -> ((Consumer<Boolean>) setter).accept(get(nbt, key, (Boolean) this.defaultValues.get(key)));
                     case BLOCK_POS -> ((Consumer<BlockPos>) setter).accept(get(nbt, key, (BlockPos) this.defaultValues.get(key)));
                     case VEC_3D -> ((Consumer<Vec3d>) setter).accept(get(nbt, key, (Vec3d) this.defaultValues.get(key)));
-                    case DIRECTION -> ((Consumer<Direction>) setter).accept(get(nbt, key, (Direction) this.defaultValues.get(key), Direction::byName));
-//                    case CARDINAL_DIRECTION -> ((Consumer<CardinalDirection>) setter).accept(get(nbt, key, (CardinalDirection) this.defaultValues.get(key), CardinalDirection::byName));
+                    case STRING_IDENTIFIABLE ->
+                            ((Consumer<StringIdentifiable>) setter).accept(get(nbt, key, (StringIdentifiable) this.defaultValues.get(key), (Function<String, StringIdentifiable>) this.parsers.get(key)));
                     case UUID -> ((Consumer<UUID>) setter).accept(get(nbt, key, (UUID) this.defaultValues.get(key)));
                     case BYTE -> ((Consumer<Byte>) setter).accept(get(nbt, key, (Byte) this.defaultValues.get(key)));
                     case BOX -> ((Consumer<Box>) setter).accept(get(nbt, key, (Box) this.defaultValues.get(key)));
@@ -175,8 +176,9 @@ public abstract class Serializable {
             this.registerProperty(key, getter, setter, defaultValue, SerializableType.BOOLEAN);
         }
 
-        public void registerProperty(String key, Supplier<Direction> getter, Consumer<Direction> setter, Direction defaultValue) {
-            this.registerProperty(key, getter, setter, defaultValue, SerializableType.DIRECTION);
+        public <T extends StringIdentifiable> void registerProperty(String key, Supplier<T> getter, Consumer<T> setter, T defaultValue, Function<String, T> parser) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.STRING_IDENTIFIABLE);
+            parsers.put(key, parser);
         }
 
 //        public void registerProperty(String key, Supplier<CardinalDirection> getter, Consumer<CardinalDirection> setter, CardinalDirection defaultValue) {

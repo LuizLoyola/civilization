@@ -19,6 +19,76 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         this.entityHeight = (int) Math.ceil(entity.getHeight());
     }
 
+    private static void checkLDiagonals(BlockPos pos, NodeFinder n) {
+        // L DIAGONALS + diagonal
+
+        var nne = pos.east(1).north(2);
+        nne = n.add(n.checkDiagonalL(pos, nne, pos.north(1), pos.north(1).east(1), pos.north(2), pos.east(1), true));
+        if (nne != null) n.add(n.checkDiagonal(pos, nne.east(1).north(1), nne.north(), nne.east()));
+
+        var nee = pos.east(2).north(1);
+        nee = n.add(n.checkDiagonalL(pos, nee, pos.east(1).north(1), pos.east(1), pos.north(1), pos.east(2), false));
+        if (nee != null) n.add(n.checkDiagonal(pos, nee.east(1).north(1), nee.north(1), nee.east(1)));
+
+        var see = pos.east(2).south(1);
+        see = n.add(n.checkDiagonalL(pos, see, pos.east(1), pos.east(1).south(1), pos.east(2), pos.south(1), true));
+        if (see != null) n.add(n.checkDiagonal(pos, see.east(1).south(1), see.south(1), see.east(1)));
+
+        var sse = pos.east(1).south(2);
+        sse = n.add(n.checkDiagonalL(pos, sse, pos.south(1).east(1), pos.south(1), pos.east(1), pos.south(2), false));
+        if (sse != null) n.add(n.checkDiagonal(pos, sse.east(1).south(1), sse.south(1), sse.east(1)));
+
+        var ssw = pos.west(1).south(2);
+        ssw = n.add(n.checkDiagonalL(pos, ssw, pos.south(1), pos.south(1).west(1), pos.south(2), pos.west(1), true));
+        if (ssw != null) n.add(n.checkDiagonal(pos, ssw.west(1).south(1), ssw.south(1), ssw.west(1)));
+
+        var sww = pos.west(2).south(1);
+        sww = n.add(n.checkDiagonalL(pos, sww, pos.south(1).west(1), pos.west(1), pos.south(1), pos.west(2), false));
+        if (sww != null) n.add(n.checkDiagonal(pos, sww.west(1).south(1), sww.south(1), sww.west(1)));
+
+        var nww = pos.west(2).north(1);
+        nww = n.add(n.checkDiagonalL(pos, nww, pos.west(1), pos.west(1).north(1), pos.west(2), pos.north(1), true));
+        if (nww != null) n.add(n.checkDiagonal(pos, nww.west(1).north(1), nww.north(1), nww.west(1)));
+
+        var nnw = pos.west(1).north(2);
+        nnw = n.add(n.checkDiagonalL(pos, nnw, pos.north(1).west(1), pos.north(1), pos.west(1), pos.north(2), false));
+        if (nnw != null) n.add(n.checkDiagonal(pos, nnw.west(1).north(1), nnw.north(1), nnw.west(1)));
+    }
+
+    private static void checkPerfectDiagonals(BlockPos pos, int maxWalkDist, NodeFinder n) {
+        // PERFECT DIAGONALS
+        BlockPos northEast = pos;
+        BlockPos southEast = pos;
+        BlockPos southWest = pos;
+        BlockPos northWest = pos;
+
+        for (int i = 1; i <= maxWalkDist; i++) {
+            var ne = pos.east(i).north(i);
+            northEast = northEast == null ? null : n.add(n.checkDiagonal(pos, ne, ne.east(-1), ne.north(-1)));
+            var se = pos.south(i).east(i);
+            southEast = southEast == null ? null : n.add(n.checkDiagonal(pos, se, se.south(-1), se.east(-1)));
+            var sw = pos.west(i).south(i);
+            southWest = southWest == null ? null : n.add(n.checkDiagonal(pos, sw, sw.west(-1), sw.south(-1)));
+            var nw = pos.north(i).west(i);
+            northWest = northWest == null ? null : n.add(n.checkDiagonal(pos, nw, nw.north(-1), nw.west(-1)));
+        }
+    }
+
+    private static void checkCardinals(BlockPos pos, int maxWalkDist, NodeFinder n) {
+        // CARDINALS
+        BlockPos north = pos;
+        BlockPos east = pos;
+        BlockPos south = pos;
+        BlockPos west = pos;
+
+        for (int i = 1; i <= maxWalkDist; i++) {
+            north = north == null ? null : n.add(n.checkCardinal(pos, north.north()));
+            east = east == null ? null : n.add(n.checkCardinal(pos, east.east()));
+            south = south == null ? null : n.add(n.checkCardinal(pos, south.south()));
+            west = west == null ? null : n.add(n.checkCardinal(pos, west.west()));
+        }
+    }
+
     @Override
     public List<Step> getNeighbors(BlockPos pos) {
         // if is on air, go down until find a block
@@ -34,66 +104,13 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             }
         }
 
-        var n = new NodeFinder(p.up());
-
-        // CARDINALS
-        BlockPos north = pos;
-        BlockPos east = pos;
-        BlockPos south = pos;
-        BlockPos west = pos;
-
         int maxWalkDist = 3;
 
-        for (int i = 1; i <= maxWalkDist; i++) {
-            north = north == null ? null : n.add(n.checkCardinal(north.north()));
-            east = east == null ? null : n.add(n.checkCardinal(east.east()));
-            south = south == null ? null : n.add(n.checkCardinal(south.south()));
-            west = west == null ? null : n.add(n.checkCardinal(west.west()));
-        }
+        var n = new NodeFinder(p.up());
 
-        // PERFECT DIAGONALS
-        BlockPos northEast = pos;
-        BlockPos southEast = pos;
-        BlockPos southWest = pos;
-        BlockPos northWest = pos;
-
-        for (int i = 1; i <= maxWalkDist; i++) {
-            var ne = pos.east(i).north(i);
-            northEast = northEast == null ? null : n.add(n.checkWalkDiagonal(ne, ne.east(-1), ne.north(-1)));
-            var se = pos.south(i).east(i);
-            southEast = southEast == null ? null : n.add(n.checkWalkDiagonal(se, se.south(-1), se.east(-1)));
-            var sw = pos.west(i).south(i);
-            southWest = southWest == null ? null : n.add(n.checkWalkDiagonal(sw, sw.west(-1), sw.south(-1)));
-            var nw = pos.north(i).west(i);
-            northWest = northWest == null ? null : n.add(n.checkWalkDiagonal(nw, nw.north(-1), nw.west(-1)));
-        }
-
-        // L DIAGONALS
-
-
-        var nne = pos.east(1).north(2);
-        n.add(n.checkWalkDiagonalL(nne, pos.north(1), pos.north(1).east(1), pos.north(2), pos.east(1), true));
-
-        var nee = pos.east(2).north(1);
-        n.add(n.checkWalkDiagonalL(nee, pos.east(1).north(1), pos.east(1), pos.north(1), pos.east(2), false));
-
-        var see = pos.east(2).south(1);
-        n.add(n.checkWalkDiagonalL(see, pos.east(1), pos.east(1).south(1), pos.east(2), pos.south(1), true));
-
-        var sse = pos.east(1).south(2);
-        n.add(n.checkWalkDiagonalL(sse, pos.south(1).east(1), pos.south(1), pos.east(1), pos.south(2), false));
-
-        var ssw = pos.west(1).south(2);
-        n.add(n.checkWalkDiagonalL(ssw, pos.south(1), pos.south(1).west(1), pos.south(2), pos.west(1), true));
-
-        var sww = pos.west(2).south(1);
-        n.add(n.checkWalkDiagonalL(sww, pos.south(1).west(1), pos.west(1), pos.south(1), pos.west(2), false));
-
-        var nww = pos.west(2).north(1);
-        n.add(n.checkWalkDiagonalL(nww, pos.west(1), pos.west(1).north(1), pos.west(2), pos.north(1), true));
-
-        var nnw = pos.west(1).north(2);
-        n.add(n.checkWalkDiagonalL(nnw, pos.north(1).west(1), pos.north(1), pos.west(1), pos.north(2), false));
+        checkLDiagonals(pos, n);
+        checkPerfectDiagonals(pos, maxWalkDist, n);
+        checkCardinals(pos, maxWalkDist, n);
 
         return n.nodeList;
     }
@@ -110,17 +127,17 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             if (step == null) return null;
             nodeList.add(step);
             // if it is not WALK, then return null to avoid trying to walk right after jump/fall
-            return step.type() == Step.Type.WALK ? step.pos() : null;
+            return step.yDiff() == 0 ? step.toPos() : null;
         }
 
-        public Step checkCardinal(BlockPos pos) {
-            if (canStandOn(pos)) return new Step(pos, Step.Type.WALK);
+        public Step checkCardinal(BlockPos from, BlockPos pos) {
+            if (canStandOn(pos)) return new Step(from, pos);
 
-            // can jump from origin block to pos.up?
-            if (canStandOn(origin, 1) && canStandOn(pos.up())) return new Step(pos.up(), Step.Type.JUMP);
+            // can jump from origin block to toPos.up?
+            if (canStandOn(origin, 1) && canStandOn(pos.up())) return new Step(from, pos.up());
 
-            // can fall from origin block to pos.down?
-            if (canStandOn(origin) && canStandOn(pos.down(), 1)) return new Step(pos.down(), Step.Type.FALL);
+            // can fall from origin block to toPos.down?
+            if (canStandOn(origin) && canStandOn(pos.down(), 1)) return new Step(from, pos.down());
 
             return null;
         }
@@ -147,9 +164,9 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             return world.isTopSolid(target, entity);
         }
 
-        public Step checkWalkDiagonal(BlockPos target, BlockPos left, BlockPos right) {
+        public Step checkDiagonal(BlockPos from, BlockPos target, BlockPos left, BlockPos right) {
             if (canStandOn(target)) {
-                if (isEnoughClearance(left) && isEnoughClearance(right)) return new Step(target, Step.Type.WALK);
+                if (isEnoughClearance(left) && isEnoughClearance(right)) return new Step(from, target);
                 // can't get there through simple diagonal. another path may be possible around the obstacle or jumping to another block
                 return null;
             }
@@ -157,7 +174,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             // can jump from origin block to target.up?
             if (canStandOn(origin, 1) && canStandOn(target.up())) {
                 // need clearance on both sides, but ignore the bottom block
-                if (isEnoughClearance(left.up()) && isEnoughClearance(right.up())) return new Step(target.up(), Step.Type.JUMP);
+                if (isEnoughClearance(left.up()) && isEnoughClearance(right.up())) return new Step(from, target.up());
 
                 return null;
             }
@@ -165,7 +182,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             // can fall from origin block to target.down?
             if (canStandOn(origin) && canStandOn(target.down(), 1)) {
                 // need clearance on both sides
-                if (isEnoughClearance(left) && isEnoughClearance(right)) return new Step(target.down(), Step.Type.FALL);
+                if (isEnoughClearance(left) && isEnoughClearance(right)) return new Step(from, target.down());
 
                 return null;
             }
@@ -173,11 +190,11 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
             return null;
         }
 
-        public Step checkWalkDiagonalL(BlockPos target, BlockPos left, BlockPos right, BlockPos leftExtra, BlockPos rightExtra, boolean invertedL) {
+        public Step checkDiagonalL(BlockPos from, BlockPos target, BlockPos left, BlockPos right, BlockPos leftExtra, BlockPos rightExtra, boolean invertedL) {
             if (canStandOn(target)) {
                 // left or right must be standable, all others must be passable
                 if ((canStandOn(left) || canStandOn(right)) && isEnoughClearance(left) && isEnoughClearance(right) && isEnoughClearance(leftExtra) && isEnoughClearance(rightExtra))
-                    return new Step(target, Step.Type.WALK);
+                    return new Step(from, target);
             }
 
             // Currently jumping in L is not possible. Maybe with more complex moving.
@@ -190,7 +207,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
 //
 //                // need clearance on both sides and extra beside origin. also need clearance but one up on extra beside target
 //                if (isEnoughClearance(left, 1) && isEnoughClearance(right, 1) && isEnoughClearance(extraBesideOrigin, 1) && isEnoughClearance(extraBesideTarget.up()))
-//                    return new Step(target.up(), Step.Type.JUMP);
+//                    return new Step(from, target.up(), Step.Type.JUMP);
 //            }
 
             // can fall from origin block to target.down?
@@ -201,7 +218,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
 
                 // need clearance under both sides and extra beside target. also need clearance on extra beside origin
                 if (isEnoughClearance(left.down(), 1) && isEnoughClearance(right.down(), 1) && isEnoughClearance(extraBesideTarget.down(), 1) && isEnoughClearance(extraBesideOrigin.up()))
-                    return new Step(target.down(), Step.Type.FALL);
+                    return new Step(from, target.down());
             }
 
             return null;

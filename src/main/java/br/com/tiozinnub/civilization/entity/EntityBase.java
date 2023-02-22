@@ -149,7 +149,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         @Override
         public void registerProperties(SerializableHelper helper) {
             helper.registerProperty("targetBlock", () -> this.targetBlock, (value) -> this.targetBlock = value, null);
-            helper.registerProperty("pace", () -> this.pace.asString(), (value) -> this.pace = WalkPace.fromString(value), null);
+            helper.registerProperty("pace", () -> this.pace, (value) -> this.pace = value, null, WalkPace::fromString);
             helper.registerProperty("startTime", () -> this.startTime, (value) -> this.startTime = value, 0);
             helper.registerProperty("walkTicks", () -> this.walkTicks, (value) -> this.walkTicks = value, 0);
             helper.registerProperty("targetPos", () -> this.targetPos, (value) -> this.targetPos = value, null);

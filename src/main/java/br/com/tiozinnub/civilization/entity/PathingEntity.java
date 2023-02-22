@@ -6,14 +6,18 @@ import br.com.tiozinnub.civilization.core.ai.movement.pathing.Path;
 import br.com.tiozinnub.civilization.core.ai.movement.pathing.PathfinderService;
 import br.com.tiozinnub.civilization.core.ai.movement.pathing.WorldNodeViewer;
 import br.com.tiozinnub.civilization.utils.Serializable;
+import br.com.tiozinnub.civilization.utils.helper.ParticleHelper;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public abstract class PathingEntity extends EntityBase {
     private final PathfinderService pathfinderService;
@@ -94,29 +98,27 @@ public abstract class PathingEntity extends EntityBase {
         var pfServ = this.getPathfinderService();
 
         if (pfServ.isFindingPath()) {
-            if (this.isPathfinderAutoTicking) {
-                if (this.isPathfinderSlowTicking) {
-                    if (this.getWorld().getTime() % 5 == 0) {
-                        pfServ.tick();
-                    }
-                } else {
-                    pfServ.tickUntilFind();
+            if (this.isPathfinderSlowTicking) {
+                if (this.getWorld().getTime() % 20 == 0) {
+                    pfServ.tick();
                 }
+            } else if (this.isPathfinderAutoTicking) {
+                pfServ.tickUntilFind();
             }
 
-//            if (this.debug && pfServ.pathfinder != null) {
-//                for (var node : pfServ.pathfinder.nodes) {
-//                    var isOpen = pfServ.pathfinder.isOpen(node.index());
-//                    var parentPos = (node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos()).toCenterPos();
-//                    var pos = node.pos().toCenterPos();
-//                    var particleType = ParticleTypes.FLAME;
-//                    if (isOpen) {
-//                        particleType = ParticleTypes.SOUL_FIRE_FLAME;
-//                        pos = pos.add(0, .5f, 0);
-//                    }
-//                    ParticleHelper.drawParticleLine(getWorld(), parentPos, pos, particleType, 3d, 5);
-//                }
-//            }
+            if (this.debug && pfServ.pathfinder != null) {
+                for (var node : pfServ.pathfinder.nodes) {
+                    var isOpen = pfServ.pathfinder.isOpen(node.index());
+                    var parentPos = (node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos()).toCenterPos();
+                    var pos = node.pos().toCenterPos();
+                    var particleType = ParticleTypes.FLAME;
+                    if (isOpen) {
+                        particleType = ParticleTypes.SOUL_FIRE_FLAME;
+                        pos = pos.add(0, .5f, 0);
+                    }
+                    ParticleHelper.drawParticleLine(getWorld(), parentPos, pos, particleType, 3d, 5);
+                }
+            }
         }
 
         var path = pfServ.getPathAndClear();
@@ -126,14 +128,18 @@ public abstract class PathingEntity extends EntityBase {
 
 //        path = this.getMovementControl().path;
 
-        if (this.debug && path != null) {
-            // debug
-//            var prevPos = this.getBlockPos();
-//            for (var node : this.getMovementControl().getRemainingSteps()) {
-//                var pos = node.pos();
-//                ParticleHelper.drawParticleLine(getWorld(), prevPos.toCenterPos(), pos.toCenterPos(), ParticleTypes.CRIT, 3d, 2);
-//                prevPos = pos;
-//            }
+        if (this.debug && this.getPathFollower().path != null) {
+            var prevPos = this.getBlockPos();
+            List<Step> steps = this.getPathFollower().path.getSteps();
+            int i = this.getPathFollower().stepIndex;
+            if (i >= 0) {
+                for (; i < steps.size(); i++) {
+                    var node = steps.get(i);
+                    var pos = node.toPos();
+                    ParticleHelper.drawParticleLine(getWorld(), prevPos.toCenterPos(), pos.toCenterPos(), ParticleTypes.CRIT, 3d, 2);
+                    prevPos = pos;
+                }
+            }
         }
 
         this.getPathFollower().tick();
@@ -141,6 +147,7 @@ public abstract class PathingEntity extends EntityBase {
 
     public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook) {
         this.getPathfinderService().startPathfinder(getBlockPos(), pos);
+        this.getPathFollower().finishPath();
         this.nextTargetPace = pace;
         this.nextTargetResetLook = resetLook;
     }
@@ -178,7 +185,7 @@ public abstract class PathingEntity extends EntityBase {
                 this.stepTime++;
             }
 
-            var distance = getPos().distanceTo(Vec3d.ofBottomCenter(this.currentStep.pos()));
+            var distance = getPos().distanceTo(Vec3d.ofBottomCenter(this.currentStep.toPos()));
 
             var isLastStep = this.stepIndex >= this.path.getSteps().size();
 
@@ -211,7 +218,7 @@ public abstract class PathingEntity extends EntityBase {
                 setPose(EntityPose.STANDING);
             }
 
-            getMovementControl().walkTo(this.currentStep.pos(), this.pace, false);
+            getMovementControl().walkTo(this.currentStep.toPos(), this.pace, false);
         }
 
         private void finishPath() {

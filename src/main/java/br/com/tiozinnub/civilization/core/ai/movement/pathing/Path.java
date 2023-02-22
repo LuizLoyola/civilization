@@ -52,15 +52,12 @@ public class Path extends Serializable {
 
         // append steps
         for (var step : steps) {
-            // step type
-            sb.append(step.type().c);
-
             // step directions based on last
-            var xDiff = step.pos().getX() - lastPos.getX();
-            var yDiff = step.pos().getY() - lastPos.getY();
-            var zDiff = step.pos().getZ() - lastPos.getZ();
+            var xDiff = step.toPos().getX() - lastPos.getX();
+            var yDiff = step.toPos().getY() - lastPos.getY();
+            var zDiff = step.toPos().getZ() - lastPos.getZ();
 
-            lastPos = step.pos();
+            lastPos = step.toPos();
 
             char xChar = xDiff > 0 ? 'E' : xDiff < 0 ? 'W' : '-';
             var yChar = yDiff > 0 ? 'U' : yDiff < 0 ? 'D' : '-';
@@ -99,13 +96,12 @@ public class Path extends Serializable {
                 var pos = sb.toString().split(" ");
                 this.start = new BlockPos(Integer.parseInt(pos[0]), Integer.parseInt(pos[1]), Integer.parseInt(pos[2]));
                 lastPos = start;
-                steps.add(new Step(start, Step.Type.START));
+                steps.add(new Step(null, start));
                 first = false;
             } else {
-                var stepType = Step.Type.fromChar(sb.charAt(0));
                 var pos = lastPos;
 
-                for (int i = 1; i < sb.length(); i++) {
+                for (int i = 0; i < sb.length(); i++) {
                     var c = sb.charAt(i);
                     switch (c) {
                         case 'E' -> pos = pos.east();
@@ -117,7 +113,7 @@ public class Path extends Serializable {
                     }
                 }
 
-                steps.add(new Step(pos, stepType));
+                steps.add(new Step(lastPos, pos));
                 lastPos = pos;
             }
         }

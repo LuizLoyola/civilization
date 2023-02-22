@@ -20,4 +20,8 @@ public class PositionHelper {
 
         return atan2(dX, dZ);
     }
+
+    public static double yawBetween(BlockPos from, BlockPos to) {
+        return yawBetween(from.toCenterPos(), to.toCenterPos());
+    }
 }
