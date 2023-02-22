@@ -72,7 +72,7 @@ public class PathWandItem extends ItemWithData<PathWandItem.PathWandItemData> {
             return ActionResult.SUCCESS;
         }
 
-        personEntity.setMovementTarget(context.getBlockPos().up(), WalkPace.RUN, false);
+        personEntity.setMovementTarget(context.getBlockPos().up(), WalkPace.DEFAULT, false);
 
         return ActionResult.SUCCESS;
     }

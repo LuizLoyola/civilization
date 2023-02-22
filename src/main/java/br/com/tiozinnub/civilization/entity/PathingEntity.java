@@ -24,7 +24,7 @@ public abstract class PathingEntity extends EntityBase {
     private final PathFollower pathFollower;
     public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
     public boolean isPathfinderSlowTicking = false;
-    private boolean debug = true;
+    private boolean debug = false;
     private WalkPace nextTargetPace;
     private boolean nextTargetResetLook;
 

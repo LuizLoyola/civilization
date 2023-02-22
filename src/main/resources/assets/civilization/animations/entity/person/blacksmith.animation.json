@@ -1,0 +1,51 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"blacksmith.tink": {
+			"loop": true,
+			"animation_length": 2,
+			"bones": {
+				"body": {
+					"rotation": {
+						"vector": [10, 0, 0]
+					}
+				},
+				"armRight": {
+					"rotation": {
+						"0.0": {
+							"vector": [-52.39445, -3.9649, -3.04868]
+						},
+						"1.5": {
+							"vector": [-157.39445, -3.9649, -3.04868],
+							"easing": "easeInOutQuad"
+						},
+						"1.75": {
+							"vector": [-52.39445, -3.9649, -3.04868],
+							"easing": "easeInSine"
+						}
+					}
+				},
+				"armLeft": {
+					"rotation": {
+						"vector": [-69.3531, 14.0761, 5.23619]
+					}
+				},
+				"head": {
+					"rotation": {
+						"vector": [20, 0, 0]
+					}
+				}
+			},
+			"sound_effects": {
+				"1.6667": {
+					"effect": "tink"
+				}
+			},
+			"particle_effects": {
+				"1.75": {
+					"effect": "blacksmith_tink"
+				}
+			}
+		}
+	}
+}
