@@ -2,17 +2,19 @@ package br.com.tiozinnub.civilization.core.ai.movement.pathing;
 
 import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import br.com.tiozinnub.civilization.utils.Serializable;
+import br.com.tiozinnub.civilization.utils.helper.PositionHelper;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static br.com.tiozinnub.civilization.utils.helper.StringHelper.getStringFromBlockPos;
+import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.up;
+import static br.com.tiozinnub.civilization.utils.helper.StringHelper.getStringFromVec3d;
 
 public class Path extends Serializable {
     private final List<Step> steps;
-    private BlockPos start;
+    private Vec3d start;
     private String pathData;
 
     public Path(NbtCompound nbt) {
@@ -20,7 +22,7 @@ public class Path extends Serializable {
         fromNbt(nbt);
     }
 
-    public Path(BlockPos start) {
+    public Path(Vec3d start) {
         this.start = start;
         this.steps = new ArrayList<>();
         this.pathData = null;
@@ -46,29 +48,30 @@ public class Path extends Serializable {
         var sb = new StringBuilder();
 
         // append start position
-        sb.append(getStringFromBlockPos(start, false)).append("|");
+        sb.append(getStringFromVec3d(start, false)).append("|");
 
         var lastPos = start;
 
         // append steps
         for (var step : steps) {
             // step directions based on last
-            var xDiff = step.toPos().getX() - lastPos.getX();
+            var xDiff = (int) (step.toPos().getX() - lastPos.getX());
             var yDiff = step.toPos().getY() - lastPos.getY();
-            var zDiff = step.toPos().getZ() - lastPos.getZ();
+            var zDiff = (int) (step.toPos().getZ() - lastPos.getZ());
 
             lastPos = step.toPos();
 
-            char xChar = xDiff > 0 ? 'E' : xDiff < 0 ? 'W' : '-';
+            var xChar = xDiff > 0 ? 'E' : xDiff < 0 ? 'W' : '-';
             var yChar = yDiff > 0 ? 'U' : yDiff < 0 ? 'D' : '-';
             var zChar = zDiff > 0 ? 'S' : zDiff < 0 ? 'N' : '-';
 
             xDiff = Math.abs(xDiff);
-            yDiff = Math.abs(yDiff);
             zDiff = Math.abs(zDiff);
 
             if (xDiff > 0) sb.append(String.valueOf(xChar).repeat(xDiff));
-            if (yDiff > 0) sb.append(String.valueOf(yChar).repeat(yDiff));
+            if (yDiff != 0) {
+                sb.append(yChar).append("(").append(yDiff).append(")");
+            }
             if (zDiff > 0) sb.append(String.valueOf(zChar).repeat(zDiff));
 
             sb.append("|");
@@ -82,7 +85,7 @@ public class Path extends Serializable {
 
         var idx = 0;
         var first = true;
-        BlockPos lastPos = null;
+        Vec3d lastPos = null;
 
         while (idx < data.length()) {
             var sb = new StringBuilder();
@@ -94,22 +97,33 @@ public class Path extends Serializable {
 
             if (first) {
                 var pos = sb.toString().split(" ");
-                this.start = new BlockPos(Integer.parseInt(pos[0]), Integer.parseInt(pos[1]), Integer.parseInt(pos[2]));
+                this.start = new Vec3d(Integer.parseInt(pos[0]), Double.parseDouble(pos[1]), Integer.parseInt(pos[2]));
                 lastPos = start;
                 steps.add(new Step(null, start));
                 first = false;
             } else {
                 var pos = lastPos;
 
+                var yDir = 0;
+
                 for (int i = 0; i < sb.length(); i++) {
                     var c = sb.charAt(i);
                     switch (c) {
-                        case 'E' -> pos = pos.east();
-                        case 'W' -> pos = pos.west();
-                        case 'U' -> pos = pos.up();
-                        case 'D' -> pos = pos.down();
-                        case 'S' -> pos = pos.south();
-                        case 'N' -> pos = pos.north();
+                        case 'E' -> pos = pos.add(PositionHelper.east());
+                        case 'W' -> pos = pos.add(PositionHelper.west());
+                        case 'U' -> yDir = 1;
+                        case 'D' -> yDir = -1;
+                        case '(' -> {
+                            var sb2 = new StringBuilder();
+                            while (true) {
+                                var c2 = sb.charAt(++i);
+                                if (c2 == ')') break;
+                                sb2.append(c2);
+                            }
+                            pos = pos.add(up(yDir * Double.parseDouble(sb2.toString())));
+                        }
+                        case 'S' -> pos = pos.add(PositionHelper.south());
+                        case 'N' -> pos = pos.add(PositionHelper.north());
                     }
                 }
 
@@ -127,7 +141,7 @@ public class Path extends Serializable {
         return steps;
     }
 
-    public BlockPos getStart() {
+    public Vec3d getStart() {
         return start;
     }
 }

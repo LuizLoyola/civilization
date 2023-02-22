@@ -14,7 +14,6 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.world.World;
@@ -135,11 +134,10 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
     }
 
     protected class MovementControl extends Serializable {
-        private BlockPos targetBlock;
         private WalkPace pace;
         private long startTime;
         private int walkTicks;
-        private Vec3d targetPos;
+        private Vec3d targetBlock;
         private boolean resetLookWhenStop;
         private Vec3d lookPos;
         private UUID lookEntityId;
@@ -148,11 +146,10 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
         @Override
         public void registerProperties(SerializableHelper helper) {
-            helper.registerProperty("targetBlock", () -> this.targetBlock, (value) -> this.targetBlock = value, null);
             helper.registerProperty("pace", () -> this.pace, (value) -> this.pace = value, null, WalkPace::fromString);
             helper.registerProperty("startTime", () -> this.startTime, (value) -> this.startTime = value, 0);
             helper.registerProperty("walkTicks", () -> this.walkTicks, (value) -> this.walkTicks = value, 0);
-            helper.registerProperty("targetPos", () -> this.targetPos, (value) -> this.targetPos = value, null);
+            helper.registerProperty("targetBlock", () -> this.targetBlock, (value) -> this.targetBlock = value, null);
             helper.registerProperty("resetLookWhenStop", () -> this.resetLookWhenStop, (value) -> this.resetLookWhenStop = value, false);
             helper.registerProperty("lookPos", () -> this.lookPos, (value) -> this.lookPos = value, null);
             helper.registerProperty("lookEntityId", () -> this.lookEntityId, (value) -> this.lookEntityId = value, null);
@@ -160,11 +157,10 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             helper.registerProperty("hasLookAnchor", () -> this.hasLookAnchor, (value) -> this.hasLookAnchor = value, false);
         }
 
-        public MovementControl walkTo(BlockPos pos, WalkPace pace, boolean resetLook) {
+        public MovementControl walkTo(Vec3d pos, WalkPace pace, boolean resetLook) {
             this.stopMove();
             this.isWalking = true;
             this.targetBlock = pos;
-            this.targetPos = Vec3d.ofBottomCenter(pos);
             this.pace = pace;
             this.startTime = getWorld().getTime();
 
@@ -199,7 +195,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         }
 
         private double getDistanceToTarget() {
-            return this.targetPos.distanceTo(getPos());
+            return this.targetBlock.distanceTo(getPos());
         }
 
         public void tick() {
@@ -231,7 +227,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 //                var yOffset = getDistanceToTarget() < 1d ? 0d : -.5d;
                 var yOffset = 0d;
 
-                this.lookPos = this.targetPos.add(0, yOffset, 0);
+                this.lookPos = this.targetBlock.add(0, yOffset, 0);
 
                 this.lookAt(this.lookPos, false);
             }
@@ -241,7 +237,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
             if (this.targetBlock == null) return;
             this.walkTicks++;
 
-            this.strafeTo(this.targetPos);
+            this.strafeTo(this.targetBlock);
 
             if (getDistanceToTarget() < 0.25d) {
                 this.stopMove();
@@ -271,7 +267,6 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         public MovementControl stopMove() {
             this.stopStrafe();
             this.isWalking = false;
-            this.targetPos = null;
             this.targetBlock = null;
             this.pace = WalkPace.DEFAULT;
 

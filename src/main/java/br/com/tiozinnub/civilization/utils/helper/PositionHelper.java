@@ -24,4 +24,52 @@ public class PositionHelper {
     public static double yawBetween(BlockPos from, BlockPos to) {
         return yawBetween(from.toCenterPos(), to.toCenterPos());
     }
+
+    public static Vec3d north() {
+        return north(1);
+    }
+
+    public static Vec3d north(double distance) {
+        return new Vec3d(0, 0, distance);
+    }
+
+    public static Vec3d south() {
+        return south(1);
+    }
+
+    public static Vec3d south(double distance) {
+        return new Vec3d(0, 0, -distance);
+    }
+
+    public static Vec3d east() {
+        return east(1);
+    }
+
+    public static Vec3d east(double distance) {
+        return new Vec3d(distance, 0, 0);
+    }
+
+    public static Vec3d west() {
+        return west(1);
+    }
+
+    public static Vec3d west(double distance) {
+        return new Vec3d(-distance, 0, 0);
+    }
+
+    public static Vec3d up() {
+        return up(1);
+    }
+
+    public static Vec3d up(double distance) {
+        return new Vec3d(0, distance, 0);
+    }
+
+    public static Vec3d down() {
+        return down(1);
+    }
+
+    public static Vec3d down(double distance) {
+        return new Vec3d(0, -distance, 0);
+    }
 }

@@ -2,13 +2,13 @@ package br.com.tiozinnub.civilization.core.ai.movement.pathing;
 
 import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.getDistance;
 import static br.com.tiozinnub.civilization.utils.helper.PositionHelper.yawBetween;
 
 public class PathfinderService {
@@ -23,7 +23,7 @@ public class PathfinderService {
         return this.pathfinder != null && this.pathfinder.isWorking();
     }
 
-    public void startPathfinder(BlockPos start, BlockPos end) {
+    public void startPathfinder(Vec3d start, Vec3d end) {
         if (this.isFindingPath()) {
             if (this.pathfinder != null) {
                 this.pathfinder.cancel();
@@ -34,7 +34,7 @@ public class PathfinderService {
         this.pathfinder = new Pathfinder(start, end);
     }
 
-    public Path findPath(BlockPos start, BlockPos end) {
+    public Path findPath(Vec3d start, Vec3d end) {
         this.startPathfinder(start, end);
         while (this.isFindingPath()) {
             this.tickUntilFind();
@@ -81,7 +81,7 @@ public class PathfinderService {
     }
 
     public abstract static class NodeViewer {
-        public abstract List<Step> getNeighbors(BlockPos pos);
+        public abstract List<Step> getNeighbors(Vec3d pos);
     }
 
     public class Pathfinder {
@@ -90,16 +90,16 @@ public class PathfinderService {
         private static final double JUMP_COST = Y_DIFF_COST + 1.5d;
         private static final double FALL_COST = Y_DIFF_COST + 0.75d;
         public final ArrayList<Node> nodes; // TODO: CHANGE TO PRIVATE
-        private final BlockPos start;
-        private final BlockPos end;
+        private final Vec3d start;
+        private final Vec3d end;
         private final HashSet<Integer> open;
         private final HashSet<Integer> closed;
-        private final HashMap<BlockPos, Integer> posMap;
+        private final HashMap<Vec3d, Integer> posMap;
         public Path path;
         private boolean cancelled;
 
-        public Pathfinder(BlockPos start, BlockPos end) {
-            this.start = start;
+        public Pathfinder(Vec3d start, Vec3d end) {
+            this.start = Vec3d.ofBottomCenter(new BlockPos(start));
             this.end = end;
 
             this.nodes = new ArrayList<>();
@@ -137,7 +137,7 @@ public class PathfinderService {
             var index = at == -1 ? this.nodes.size() : at;
             var parentCost = parent == null ? 0 : parent.totalCost;
             var parentIndex = parent == null ? -1 : parent.index();
-            var node = new Node(index, parentIndex, step.fromPos(), step.toPos(), cost, parentCost + cost, getDistance(step.toPos(), end));
+            var node = new Node(index, parentIndex, step.fromPos(), step.toPos(), cost, parentCost + cost, step.toPos().distanceTo(end));
 
             if (at == -1) {
                 this.nodes.add(node);
@@ -170,7 +170,7 @@ public class PathfinderService {
                 }
             }
 
-            return getDistance(from.pos(), to.toPos()) * multiplier;
+            return from.pos().distanceTo(to.toPos()) * multiplier;
         }
 
         private List<Node> getOpenNodes() {
@@ -246,10 +246,10 @@ public class PathfinderService {
         }
 
         private boolean isNodeWorthChecking(Step node) {
-            var distanceStartToEnd = getDistance(start, end);
+            var distanceStartToEnd = start.distanceTo(end);
 
-            var distanceToEnd = getDistance(node.toPos(), end);
-            var distanceToStart = getDistance(node.toPos(), start);
+            var distanceToEnd = node.toPos().distanceTo(end);
+            var distanceToStart = node.toPos().distanceTo(start);
 
             // if the distance is too small, just check it
             var passDistance = 10;
@@ -264,7 +264,7 @@ public class PathfinderService {
             return distanceToEnd < distanceStartToEnd || distanceToStart < distanceStartToEnd;
         }
 
-        private Node getNodeAt(BlockPos pos) {
+        private Node getNodeAt(Vec3d pos) {
 //            return this.nodes.stream().filter(node -> node.toPos.equals(toPos)).findFirst().orElse(null);
             var index = this.posMap.get(pos);
             return index == null ? null : this.getNode(index);
@@ -312,7 +312,7 @@ public class PathfinderService {
         }
 
         // TODO: CHANGE TO PRIVATE
-        public record Node(int index, int parentIndex, BlockPos from, BlockPos pos, double stepCost, double totalCost, double distToEnd) {
+        public record Node(int index, int parentIndex, Vec3d from, Vec3d pos, double stepCost, double totalCost, double distToEnd) {
             public Step asStep() {
                 return new Step(from, pos);
             }

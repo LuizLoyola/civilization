@@ -45,6 +45,10 @@ public abstract class PathingEntity extends EntityBase {
         return createEntityBaseAttributes();
     }
 
+    protected float getStepHeight() {
+        return 0.6f;
+    }
+
     public void tickPathfinder() {
         this.getPathfinderService().tick();
     }
@@ -109,12 +113,12 @@ public abstract class PathingEntity extends EntityBase {
             if (this.debug && pfServ.pathfinder != null) {
                 for (var node : pfServ.pathfinder.nodes) {
                     var isOpen = pfServ.pathfinder.isOpen(node.index());
-                    var parentPos = (node.parentIndex() == -1 ? this.getBlockPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos()).toCenterPos();
-                    var pos = node.pos().toCenterPos();
+                    var parentPos = (node.parentIndex() == -1 ? this.getPos() : pfServ.pathfinder.nodes.get(node.parentIndex()).pos());
+                    var pos = node.pos().add(0d, .1d, 0d);
                     var particleType = ParticleTypes.FLAME;
                     if (isOpen) {
                         particleType = ParticleTypes.SOUL_FIRE_FLAME;
-                        pos = pos.add(0, .5f, 0);
+                        pos = pos.add(0d, .4d, 0d);
                     }
                     ParticleHelper.drawParticleLine(getWorld(), parentPos, pos, particleType, 3d, 5);
                 }
@@ -129,14 +133,14 @@ public abstract class PathingEntity extends EntityBase {
 //        path = this.getMovementControl().path;
 
         if (this.debug && this.getPathFollower().path != null) {
-            var prevPos = this.getBlockPos();
+            var prevPos = this.getPos().add(0, 0.1d, 0);
             List<Step> steps = this.getPathFollower().path.getSteps();
             int i = this.getPathFollower().stepIndex;
             if (i >= 0) {
                 for (; i < steps.size(); i++) {
                     var node = steps.get(i);
-                    var pos = node.toPos();
-                    ParticleHelper.drawParticleLine(getWorld(), prevPos.toCenterPos(), pos.toCenterPos(), ParticleTypes.CRIT, 3d, 2);
+                    var pos = node.toPos().add(0, 0.1d, 0);
+                    ParticleHelper.drawParticleLine(getWorld(), prevPos, pos, ParticleTypes.CRIT, 3d, 2);
                     prevPos = pos;
                 }
             }
@@ -146,7 +150,7 @@ public abstract class PathingEntity extends EntityBase {
     }
 
     public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook) {
-        this.getPathfinderService().startPathfinder(getBlockPos(), pos);
+        this.getPathfinderService().startPathfinder(getPos(), Vec3d.ofBottomCenter(pos));
         this.getPathFollower().finishPath();
         this.nextTargetPace = pace;
         this.nextTargetResetLook = resetLook;
@@ -185,7 +189,7 @@ public abstract class PathingEntity extends EntityBase {
                 this.stepTime++;
             }
 
-            var distance = getPos().distanceTo(Vec3d.ofBottomCenter(this.currentStep.toPos()));
+            var distance = getPos().distanceTo(this.currentStep.toPos());
 
             var isLastStep = this.stepIndex >= this.path.getSteps().size();
 
