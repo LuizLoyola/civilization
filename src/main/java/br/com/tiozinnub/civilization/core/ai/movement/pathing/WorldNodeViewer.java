@@ -4,8 +4,11 @@ import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import br.com.tiozinnub.civilization.entity.PathingEntity;
 import br.com.tiozinnub.civilization.utils.helper.PositionHelper;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShapes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,7 +99,7 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         // if is on air, go down until find a block
 
         var refPos = Vec3d.ofBottomCenter(new BlockPos(pos));
-        
+
         var p = refPos;
         while (world.isAir(new BlockPos(p))) {
             p = p.add(PositionHelper.down());
@@ -160,12 +163,42 @@ public class WorldNodeViewer extends PathfinderService.NodeViewer {
         }
 
         private boolean isEnoughClearance(Vec3d target, int extraClearance) {
-            for (int i = 0; i < entity.getHeight() + extraClearance; i++) if (!world.isAir(new BlockPos(target).up(i))) return false;
+            for (int i = 0; i < entity.getHeight() + extraClearance; i++)
+                if (!world.isAir(new BlockPos(target).up(i)))
+                    return isEnoughClearanceWithStep(target, extraClearance);
+            return true;
+        }
+
+        private boolean isEnoughClearanceWithStep(Vec3d target, int extraClearance) {
+            var topHeight = getSolidTopHeight(target.add(up()));
+            if (topHeight == -1) return false;
+
+            if (topHeight > entity.getStepHeight() || topHeight == 0) return false;
+
+            for (int i = 1; i < entity.getHeight() + extraClearance; i++)
+                if (!world.isAir(new BlockPos(target).up(i)))
+                    return false;
+
             return true;
         }
 
         private boolean isTopSolid(Vec3d target) {
-            return world.isTopSolid(new BlockPos(target), entity);
+            return world.isTopSolid(new BlockPos(target), entity) || getSolidTopHeight(target) >= 0.75d;
+        }
+
+        private double getSolidTopHeight(Vec3d target) {
+            var blockPos = new BlockPos(target);
+            var blockState = world.getBlockState(blockPos);
+
+            var voxelShape = blockState.getCollisionShape(world, blockPos);
+
+            if (voxelShape.isEmpty()) return 0;
+
+            var maxY = voxelShape.getMax(Direction.Axis.Y);
+
+            var maxYIsFull = VoxelShapes.matchesAnywhere(VoxelShapes.cuboid(0, maxY - 0.001d, 0, 1, maxY, 1), voxelShape, BooleanBiFunction.AND);
+
+            return maxYIsFull ? maxY : -1;
         }
 
         public Step checkDiagonal(Vec3d from, Vec3d target, Vec3d left, Vec3d right) {

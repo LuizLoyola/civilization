@@ -45,7 +45,7 @@ public abstract class PathingEntity extends EntityBase {
         return createEntityBaseAttributes();
     }
 
-    protected float getStepHeight() {
+    public float getStepHeight() {
         return 0.6f;
     }
 
