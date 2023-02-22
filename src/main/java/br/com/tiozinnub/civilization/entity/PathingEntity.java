@@ -45,10 +45,6 @@ public abstract class PathingEntity extends EntityBase {
         return createEntityBaseAttributes();
     }
 
-    public float getStepHeight() {
-        return 0.6f;
-    }
-
     public void tickPathfinder() {
         this.getPathfinderService().tick();
     }

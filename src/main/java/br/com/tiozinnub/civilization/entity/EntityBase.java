@@ -133,6 +133,10 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
         super.writeCustomDataToNbt(nbt);
     }
 
+    public float getStepHeight() {
+        return 0.6f;
+    }
+
     protected class MovementControl extends Serializable {
         private WalkPace pace;
         private long startTime;
@@ -239,9 +243,18 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
             this.strafeTo(this.targetBlock);
 
+            if (this.targetBlock.getY() - getPos().getY() > getStepHeight()) {
+                this.jump();
+            }
+
             if (getDistanceToTarget() < 0.25d) {
                 this.stopMove();
             }
+        }
+
+        private void jump() {
+            if (isOnGround())
+                getJumpControl().setActive();
         }
 
         private void strafeTo(Vec3d targetPos) {
