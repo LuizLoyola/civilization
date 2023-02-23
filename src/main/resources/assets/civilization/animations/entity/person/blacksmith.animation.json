@@ -17,11 +17,11 @@
 						},
 						"1.5": {
 							"vector": [-157.39445, -3.9649, -3.04868],
-							"easing": "easeInOutQuad"
+							"easing": "easeInOutQuint"
 						},
 						"1.75": {
 							"vector": [-52.39445, -3.9649, -3.04868],
-							"easing": "easeInSine"
+							"easing": "easeInCubic"
 						}
 					}
 				},
