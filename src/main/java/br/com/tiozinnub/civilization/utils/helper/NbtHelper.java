@@ -2,6 +2,7 @@ package br.com.tiozinnub.civilization.utils.helper;
 
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -63,7 +64,7 @@ public class NbtHelper {
         nbt.putByte(key, value);
     }
 
-    public static void put(NbtCompound nbt, String key, NbtCompound value) {
+    public static void put(NbtCompound nbt, String key, NbtElement value) {
         nbt.put(key, value);
     }
 
@@ -149,8 +150,8 @@ public class NbtHelper {
         return nbt.contains(key) ? nbt.getByte(key) : defaultValue;
     }
 
-    public static NbtCompound get(NbtCompound nbt, String key, NbtCompound defaultValue) {
-        return nbt.contains(key) ? nbt.getCompound(key) : defaultValue;
+    public static NbtElement get(NbtCompound nbt, String key, NbtElement defaultValue) {
+        return nbt.contains(key) ? nbt.get(key) : defaultValue;
     }
 
     public static BlockPos get(NbtCompound nbt, String key, BlockPos defaultValue) {

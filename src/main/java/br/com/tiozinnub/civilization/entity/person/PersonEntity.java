@@ -4,23 +4,23 @@ import br.com.tiozinnub.civilization.entity.PathingEntity;
 import br.com.tiozinnub.civilization.entity.property.Gender;
 import br.com.tiozinnub.civilization.entity.property.IGendered;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
-import net.minecraft.entity.EntityData;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.SpawnReason;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -40,6 +40,7 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     }
 
+    private final PersonInventory inventory = new PersonInventory(this);
     private boolean registeredOnCatalog = false;
 
     public PersonEntity(EntityType<? extends PathingEntity> entityType, World world) {
@@ -54,11 +55,86 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     @Override
     public ItemStack getEquippedStack(EquipmentSlot slot) {
-        return switch (slot) {
-            case MAINHAND -> Items.DIAMOND_PICKAXE.getDefaultStack();
-            case LEGS -> Items.DIAMOND_LEGGINGS.getDefaultStack();
-            default -> super.getEquippedStack(slot);
-        };
+        return this.inventory.getStackAtEquipmentSlot(slot);
+    }
+
+    @Override
+    public Iterable<ItemStack> getHandItems() {
+        return Arrays.asList(this.getMainHandStack(), this.getOffHandStack());
+    }
+
+    @Override
+    public ItemStack getMainHandStack() {
+        return this.getEquippedStack(EquipmentSlot.MAINHAND);
+    }
+
+    @Override
+    public ItemStack getOffHandStack() {
+        return this.getEquippedStack(EquipmentSlot.OFFHAND);
+    }
+
+    @Override
+    public Iterable<ItemStack> getArmorItems() {
+        return Arrays.asList(
+                this.getEquippedStack(EquipmentSlot.HEAD),
+                this.getEquippedStack(EquipmentSlot.CHEST),
+                this.getEquippedStack(EquipmentSlot.LEGS),
+                this.getEquippedStack(EquipmentSlot.FEET)
+        );
+    }
+
+    @Override
+    public void tickMovement() {
+        this.inventory.tick();
+
+        super.tickMovement();
+    }
+
+    @Override
+    public boolean canPickupItem(ItemStack stack) {
+        return super.canPickupItem(stack);
+    }
+
+    @Override
+    public boolean canPickUpLoot() {
+        return true;
+    }
+
+    @Override
+    protected void loot(ItemEntity item) {
+        var itemStack = item.getStack();
+
+        var allowArmor = false;
+
+        while (!itemStack.isEmpty()) {
+            var added = this.inventory.insertStack(itemStack, allowArmor);
+            if (added) break;
+        }
+
+        if (itemStack.isEmpty()) {
+            item.discard();
+        }
+    }
+
+
+    @Override
+    public void sendPickup(Entity item, int count) {
+        super.sendPickup(item, count);
+    }
+
+    @Override
+    protected Vec3i getItemPickUpRangeExpander() {
+        return super.getItemPickUpRangeExpander();
+    }
+
+    @Override
+    public void setCanPickUpLoot(boolean canPickUpLoot) {
+        super.setCanPickUpLoot(canPickUpLoot);
+    }
+
+    @Override
+    public void triggerItemPickedUpByEntityCriteria(ItemEntity item) {
+        super.triggerItemPickedUpByEntityCriteria(item);
     }
 
     @Override
@@ -70,6 +146,59 @@ public class PersonEntity extends PathingEntity implements IGendered {
             ((IServerWorldExt) getWorld()).getPersonCatalog().update(getId(), getUuid());
             registeredOnCatalog = true;
         }
+    }
+
+    protected void dropInventory() {
+        this.vanishCursedItems();
+        this.inventory.dropAll();
+    }
+
+    @Override
+    protected boolean shouldDropLoot() {
+        return super.shouldDropLoot();
+    }
+
+    protected void vanishCursedItems() {
+        for (var i = 0; i < this.inventory.size(); ++i) {
+            var itemStack = this.inventory.getStack(i);
+
+            if (itemStack.isEmpty() || !EnchantmentHelper.hasVanishingCurse(itemStack)) continue;
+
+            this.inventory.removeStack(i);
+        }
+    }
+
+    public void dropItem(ItemStack stack, boolean retainOwnership) {
+        this.dropItem(stack, false, retainOwnership);
+    }
+
+    public void dropItem(ItemStack stack, boolean throwRandomly, boolean retainOwnership) {
+        if (stack.isEmpty()) return;
+
+        var d = this.getEyeY() - 0.30000001192092896;
+        var itemEntity = new ItemEntity(this.world, this.getX(), d, this.getZ(), stack);
+        itemEntity.setPickupDelay(40);
+        if (retainOwnership) {
+            itemEntity.setThrower(this.getUuid());
+        }
+
+        float f;
+        float g;
+        if (throwRandomly) {
+            f = this.random.nextFloat() * 0.5F;
+            g = this.random.nextFloat() * 6.2831855F;
+            itemEntity.setVelocity(-MathHelper.sin(g) * f, 0.20000000298023224, MathHelper.cos(g) * f);
+        } else {
+            g = MathHelper.sin(this.getPitch() * 0.017453292F);
+            var h = MathHelper.cos(this.getPitch() * 0.017453292F);
+            var i = MathHelper.sin(this.getYaw() * 0.017453292F);
+            var j = MathHelper.cos(this.getYaw() * 0.017453292F);
+            var k = this.random.nextFloat() * 6.2831855F;
+            var l = 0.02F * this.random.nextFloat();
+            itemEntity.setVelocity((double) (-i * h * 0.3F) + Math.cos(k) * (double) l, -g * 0.3F + 0.1F + (this.random.nextFloat() - this.random.nextFloat()) * 0.1F, (double) (j * h * 0.3F) + Math.sin(k) * (double) l);
+        }
+
+        this.world.spawnEntity(itemEntity);
     }
 
     @Override
@@ -118,7 +247,7 @@ public class PersonEntity extends PathingEntity implements IGendered {
                 sbHealth.append(" \u2764");
             } else {
                 var gray = false;
-                for (int i = 2; i <= 20; i = i + 2) {
+                for (var i = 2; i <= 20; i = i + 2) {
                     if (health == i - 1) sbHealth.append("§e");
                     else if (health < i && !gray) {
                         sbHealth.append("§7");
@@ -184,12 +313,34 @@ public class PersonEntity extends PathingEntity implements IGendered {
     }
 
     @Override
+    public void damageArmor(DamageSource source, float amount) {
+        this.inventory.damageArmor(source, amount, PersonInventory.ARMOR_SLOTS);
+    }
+
+    @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
 
-        if (nbt.contains("identity")) {
-            this.dataTracker.set(IDENTITY, nbt.getCompound("identity"));
-        }
+        if (nbt.contains("identity")) this.dataTracker.set(IDENTITY, nbt.getCompound("identity"));
+    }
+
+    public PersonInventory getPersonInventory() {
+        return this.inventory;
+    }
+
+    @Override
+    public SimpleInventory getInventory() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void writeInventory(NbtCompound nbt) {
+        this.inventory.toNbt(nbt, "inventory");
+    }
+
+    @Override
+    public void readInventory(NbtCompound nbt) {
+        this.inventory.fromNbt(nbt, "inventory");
     }
 
     @Override

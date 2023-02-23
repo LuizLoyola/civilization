@@ -1,6 +1,7 @@
 package br.com.tiozinnub.civilization.utils;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
@@ -75,6 +76,12 @@ public abstract class Serializable {
                     ((List<? extends Serializable>) getter.get()).stream().map(Serializable::toNbt).forEach(listNbt::add);
                     nbt.put(key, listNbt);
                 }
+                case NBT_ELEMENT -> Optional.ofNullable((NbtElement) getter.get()).ifPresent(value -> put(nbt, key, value));
+                case LIST_NBT_ELEMENT -> {
+                    var listNbt = new NbtList();
+                    listNbt.addAll(((List<? extends NbtElement>) getter.get()));
+                    nbt.put(key, listNbt);
+                }
             }
         }
 
@@ -82,7 +89,7 @@ public abstract class Serializable {
     }
 
     public Serializable fromNbt(NbtCompound nbt, String key) {
-        return fromNbt(get(nbt, key, (NbtCompound) null));
+        return fromNbt((NbtCompound) get(nbt, key, (NbtElement) null));
     }
 
     public Set<Map.Entry<String, SerializableType>> customKeyOrder(Set<Map.Entry<String, SerializableType>> entrySet) {
@@ -126,6 +133,11 @@ public abstract class Serializable {
                     case LIST -> {
                         var list = (List<Serializable>) this.getters.get(key).get();
                         nbt.getList(key, 10).stream().map(NbtCompound.class::cast).forEach(n -> list.add(this.constructors.get(key).get().fromNbt(n)));
+                    }
+                    case NBT_ELEMENT -> ((Consumer<NbtElement>) setter).accept(get(nbt, key, (NbtElement) this.defaultValues.get(key)));
+                    case LIST_NBT_ELEMENT -> {
+                        var list = (List<NbtElement>) this.getters.get(key).get();
+                        list.addAll(nbt.getList(key, 10));
                     }
                 }
             }
@@ -211,6 +223,15 @@ public abstract class Serializable {
             this.registerProperty(key, getter, null, new ArrayList<V>(), SerializableType.LIST);
             constructors.put(key, valueConstructor);
         }
+
+        public <V extends NbtElement> void registerProperty(String key, Supplier<V> getter, Consumer<V> setter, V defaultValue) {
+            this.registerProperty(key, getter, setter, defaultValue, SerializableType.NBT_ELEMENT);
+        }
+
+        public <V extends NbtElement> void registerProperty(String key, Supplier<List<V>> getter) {
+            this.registerProperty(key, getter, null, new ArrayList<V>(), SerializableType.LIST_NBT_ELEMENT);
+        }
+
 
         private void registerProperty(String key, Supplier<?> getter, Consumer<?> setter, Object defaultValue, SerializableType type) {
             types.put(key, type);
