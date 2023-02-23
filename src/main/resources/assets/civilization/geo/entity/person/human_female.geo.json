@@ -3,7 +3,7 @@
 	"minecraft:geometry": [
 		{
 			"description": {
-				"identifier": "geometry.female_human",
+				"identifier": "geometry.human_female",
 				"texture_width": 64,
 				"texture_height": 64,
 				"visible_bounds_width": 3,
@@ -34,6 +34,11 @@
 					]
 				},
 				{
+					"name": "handRight",
+					"parent": "armRight",
+					"pivot": [-5.5, 12, -2]
+				},
+				{
 					"name": "armLeft",
 					"parent": "body",
 					"pivot": [4, 22, 0],
@@ -41,6 +46,11 @@
 						{"origin": [4, 12, -2], "size": [3, 12, 4], "uv": [32, 48]},
 						{"origin": [4, 12, -2], "size": [3, 12, 4], "inflate": 0.25, "uv": [46, 48]}
 					]
+				},
+				{
+					"name": "handLeft",
+					"parent": "armLeft",
+					"pivot": [5.5, 12, -2]
 				},
 				{
 					"name": "legRight",

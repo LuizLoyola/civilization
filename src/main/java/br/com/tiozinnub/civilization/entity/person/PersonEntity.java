@@ -6,6 +6,7 @@ import br.com.tiozinnub.civilization.entity.property.IGendered;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.damage.DamageSource;
@@ -13,6 +14,8 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -34,8 +37,8 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     static {
         IDENTITY = DataTracker.registerData(PersonEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
-    }
 
+    }
 
     private boolean registeredOnCatalog = false;
 
@@ -47,6 +50,18 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     public static DefaultAttributeContainer.Builder createPersonAttributes() {
         return createPathingEntityAttributes();
+    }
+
+    @Override
+    public ItemStack getEquippedStack(EquipmentSlot slot) {
+        return switch (slot) {
+            case MAINHAND -> Items.DIAMOND_PICKAXE.getDefaultStack();
+            case OFFHAND -> Items.DIAMOND_PICKAXE.getDefaultStack();
+            case FEET -> Items.DIAMOND_BOOTS.getDefaultStack();
+            case LEGS -> Items.DIAMOND_LEGGINGS.getDefaultStack();
+            case CHEST -> Items.DIAMOND_CHESTPLATE.getDefaultStack();
+            case HEAD -> Items.DIAMOND_HELMET.getDefaultStack();
+        };
     }
 
     @Override
