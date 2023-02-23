@@ -56,11 +56,8 @@ public class PersonEntity extends PathingEntity implements IGendered {
     public ItemStack getEquippedStack(EquipmentSlot slot) {
         return switch (slot) {
             case MAINHAND -> Items.DIAMOND_PICKAXE.getDefaultStack();
-            case OFFHAND -> Items.DIAMOND_PICKAXE.getDefaultStack();
-            case FEET -> Items.DIAMOND_BOOTS.getDefaultStack();
             case LEGS -> Items.DIAMOND_LEGGINGS.getDefaultStack();
-            case CHEST -> Items.DIAMOND_CHESTPLATE.getDefaultStack();
-            case HEAD -> Items.DIAMOND_HELMET.getDefaultStack();
+            default -> super.getEquippedStack(slot);
         };
     }
 
