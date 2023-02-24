@@ -2,6 +2,7 @@ package br.com.tiozinnub.civilization.entity.base;
 
 import br.com.tiozinnub.civilization.utils.Serializable;
 import br.com.tiozinnub.civilization.utils.helper.ParticleHelper;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -17,9 +18,9 @@ import java.util.List;
 public abstract class PathingEntity extends EntityBase {
     private final PathfinderService pathfinderService;
     private final PathFollower pathFollower;
+    private final boolean debug = false;
     public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
     public boolean isPathfinderSlowTicking = false;
-    private final boolean debug = false;
     private WalkPace nextTargetPace;
     private boolean nextTargetResetLook;
 
@@ -141,10 +142,22 @@ public abstract class PathingEntity extends EntityBase {
     }
 
     public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook) {
-        this.getPathfinderService().startPathfinder(getPos(), Vec3d.ofBottomCenter(pos));
+        setMovementTarget(pos, pace, resetLook, 0.0);
+    }
+
+    public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook, double minDistance) {
+        this.getPathfinderService().startPathfinder(getPos(), Vec3d.ofBottomCenter(pos), minDistance);
         this.getPathFollower().finishPath();
         this.nextTargetPace = pace;
         this.nextTargetResetLook = resetLook;
+    }
+
+    public void setMovementTarget(Entity target, WalkPace pace, boolean lookAtEntity, boolean resetLookWhenDone, double minDistance) {
+        this.setMovementTarget(target.getBlockPos(), pace, false, minDistance);
+
+        if (lookAtEntity) {
+            this.getMovementControl().anchorLook(target, resetLookWhenDone);
+        }
     }
 
 

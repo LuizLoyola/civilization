@@ -22,7 +22,7 @@ public class PathfinderService {
         return this.pathfinder != null && this.pathfinder.isWorking();
     }
 
-    public void startPathfinder(Vec3d start, Vec3d end) {
+    public void startPathfinder(Vec3d start, Vec3d end, double minDistance) {
         if (this.isFindingPath()) {
             if (this.pathfinder != null) {
                 this.pathfinder.cancel();
@@ -30,11 +30,11 @@ public class PathfinderService {
             this.pathfinder = null;
         }
 
-        this.pathfinder = new Pathfinder(start, end);
+        this.pathfinder = new Pathfinder(start, end, minDistance);
     }
 
-    public Path findPath(Vec3d start, Vec3d end) {
-        this.startPathfinder(start, end);
+    public Path findPath(Vec3d start, Vec3d end, double minDistance) {
+        this.startPathfinder(start, end, minDistance);
         while (this.isFindingPath()) {
             this.tickUntilFind();
         }
@@ -91,15 +91,17 @@ public class PathfinderService {
         public final ArrayList<Node> nodes; // TODO: CHANGE TO PRIVATE
         private final Vec3d start;
         private final Vec3d end;
+        private final double minDistance;
         private final HashSet<Integer> open;
         private final HashSet<Integer> closed;
         private final HashMap<Vec3d, Integer> posMap;
         public Path path;
         private boolean cancelled;
 
-        public Pathfinder(Vec3d start, Vec3d end) {
+        public Pathfinder(Vec3d start, Vec3d end, double minDistance) {
             this.start = Vec3d.ofBottomCenter(new BlockPos(start));
             this.end = end;
+            this.minDistance = minDistance;
 
             this.nodes = new ArrayList<>();
             this.open = new HashSet<>();
@@ -215,15 +217,16 @@ public class PathfinderService {
                 // check if this position is already mapped
                 var existingNode = this.getNodeAt(neighbor.toPos());
                 var isEnd = neighbor.toPos().equals(end);
+                var isCloseEnough = this.minDistance > 0 && neighbor.toPos().distanceTo(end) < this.minDistance;
 
                 if (existingNode == null) {
                     // is node even close enough to make it worth it?
-                    if (!isEnd && !this.isNodeWorthChecking(neighbor)) continue;
+                    if (!isEnd && !isCloseEnough && !this.isNodeWorthChecking(neighbor)) continue;
 
                     // this node doesn't exist, add it
                     var neighborNode = this.addNode(thisNode, neighbor, this.calculateStepCost(prevNode, thisNode, neighbor));
 
-                    if (isEnd) {
+                    if (isEnd || isCloseEnough) {
                         close(neighborNode.index);
                         this.path = this.buildPath(neighborNode.index());
                         return;

@@ -1,29 +1,37 @@
 package br.com.tiozinnub.civilization.entity.person.ai.actions;
 
+import br.com.tiozinnub.civilization.entity.base.WalkPace;
+import br.com.tiozinnub.civilization.entity.person.PersonEntity;
 import br.com.tiozinnub.civilization.entity.person.ai.Action;
+import net.minecraft.entity.LivingEntity;
 
 public class AttackEntityAction extends Action {
+    private LivingEntity target;
 
-//    @Override
-//    public void buildParameters(ActionParameterDefinitionBuilder parameters) {
-//        parameters.add("target", Entity.class);
-//        parameters.add("maxFollowDistance", Double.class).defaultValue(-1d);
-//    }
-
-//    @Override
-//    public void buildFlow(ActionFlowBuilder flow, ActionParameterReference params) {
-////        flow.testIf(f -> f.getPerson().isInAttackRange(params.get("target").asEntity()))
-////                .ifTrue(f -> f.getPerson().attack(params.get("target").asEntity()))
-////                .ifFalse(f -> f.testIf(params.get("target").asEntity())
-////                        .isInRange(params.get("maxFollowDistance").asDouble())
-////                        .ifTrue(f1 -> f1.getPerson().moveTo(params.get("target").asEntity(), f1.getPerson().getAttackRange()))
-////                        .ifFalse(f1 -> f1.cancel())
-////                );
-//    }
+    public AttackEntityAction(PersonEntity person) {
+        super(person);
+    }
 
     @Override
-    public String getFlowCode() {
+    protected void tick() {
+        assert this.target != null;
+
+        if (this.target.isDead()) {
+            this.target = null;
+            return;
+        }
+
+        if (this.person.isInAttackRange(this.target)) {
+            this.person.getNavigation().stop();
+            this.person.attack(this.target);
+        } else {
+            this.person.setMovementTarget(this.target, WalkPace.RUN_JUMP, true, false, this.person.squaredAttackRange(this.target));
+        }
 
     }
 
+    @Override
+    protected boolean canTick() {
+        return this.target != null;
+    }
 }

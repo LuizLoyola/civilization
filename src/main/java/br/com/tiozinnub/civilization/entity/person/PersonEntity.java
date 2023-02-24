@@ -7,19 +7,32 @@ import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.SwordItem;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stat;
+import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.LocalDifficulty;
@@ -28,6 +41,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static br.com.tiozinnub.civilization.entity.person.property.Gender.byGender;
@@ -44,6 +58,8 @@ public class PersonEntity extends PathingEntity implements IGendered {
     }
 
     private final PersonInventory inventory;
+    private final PersonStatHandler statHandler;
+    private final PersonHungerManager hungerManager;
     private boolean registeredOnCatalog = false;
 
     public PersonEntity(EntityType<? extends PathingEntity> entityType, World world) {
@@ -53,8 +69,12 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
         if (!this.isClient()) {
             this.inventory = new PersonInventory(this);
+            this.statHandler = new PersonStatHandler();
+            this.hungerManager = new PersonHungerManager(this);
         } else {
             this.inventory = null;
+            this.statHandler = null;
+            this.hungerManager = null;
         }
     }
 
@@ -137,7 +157,6 @@ public class PersonEntity extends PathingEntity implements IGendered {
         }
     }
 
-
     @Override
     public void sendPickup(Entity item, int count) {
         super.sendPickup(item, count);
@@ -163,10 +182,14 @@ public class PersonEntity extends PathingEntity implements IGendered {
         super.tick();
         if (getWorld().isClient()) return;
 
+
+        // TODO: Check if person catalog is still needed
         if (!registeredOnCatalog) {
             ((IServerWorldExt) getWorld()).getPersonCatalog().update(getId(), getUuid());
             registeredOnCatalog = true;
         }
+
+        this.hungerManager.tick();
     }
 
     protected void dropInventory() {
@@ -196,7 +219,7 @@ public class PersonEntity extends PathingEntity implements IGendered {
     public void dropItem(ItemStack stack, boolean throwRandomly, boolean retainOwnership) {
         if (stack.isEmpty()) return;
 
-        var d = this.getEyeY() - 0.30000001192092896;
+        var d = this.getEyeY() - 0.3f;
         var itemEntity = new ItemEntity(this.world, this.getX(), d, this.getZ(), stack);
         itemEntity.setPickupDelay(40);
         if (retainOwnership) {
@@ -207,14 +230,14 @@ public class PersonEntity extends PathingEntity implements IGendered {
         float g;
         if (throwRandomly) {
             f = this.random.nextFloat() * 0.5F;
-            g = this.random.nextFloat() * 6.2831855F;
-            itemEntity.setVelocity(-MathHelper.sin(g) * f, 0.20000000298023224, MathHelper.cos(g) * f);
+            g = this.random.nextFloat() * ((float) Math.PI * 2F);
+            itemEntity.setVelocity(-MathHelper.sin(g) * f, 0.2, MathHelper.cos(g) * f);
         } else {
-            g = MathHelper.sin(this.getPitch() * 0.017453292F);
-            var h = MathHelper.cos(this.getPitch() * 0.017453292F);
-            var i = MathHelper.sin(this.getYaw() * 0.017453292F);
-            var j = MathHelper.cos(this.getYaw() * 0.017453292F);
-            var k = this.random.nextFloat() * 6.2831855F;
+            g = MathHelper.sin(this.getPitch() * (float) Math.PI / 180.0F);
+            var h = MathHelper.cos(this.getPitch() * (float) Math.PI / 180.0F);
+            var i = MathHelper.sin(this.getYaw() * (float) Math.PI / 180.0F);
+            var j = MathHelper.cos(this.getYaw() * (float) Math.PI / 180.0F);
+            var k = this.random.nextFloat() * (float) Math.PI * 2F;
             var l = 0.02F * this.random.nextFloat();
             itemEntity.setVelocity((double) (-i * h * 0.3F) + Math.cos(k) * (double) l, -g * 0.3F + 0.1F + (this.random.nextFloat() - this.random.nextFloat()) * 0.1F, (double) (j * h * 0.3F) + Math.sin(k) * (double) l);
         }
@@ -244,7 +267,6 @@ public class PersonEntity extends PathingEntity implements IGendered {
     public Gender getGender() {
         return getIdentity().getGender();
     }
-
 
     @SuppressWarnings("UnnecessaryUnicodeEscape")
     public List<Text> getMultilineNameplate() {
@@ -344,6 +366,8 @@ public class PersonEntity extends PathingEntity implements IGendered {
         super.readCustomDataFromNbt(nbt);
 
         if (nbt.contains("identity")) this.dataTracker.set(IDENTITY, nbt.getCompound("identity"));
+
+        this.statHandler.fromNbt(nbt, "stats");
     }
 
     public PersonInventory getPersonInventory() {
@@ -371,6 +395,7 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
         nbt.put("identity", this.dataTracker.get(IDENTITY));
 
+        this.statHandler.toNbt(nbt, "stats");
     }
 
     @Override
@@ -399,4 +424,208 @@ public class PersonEntity extends PathingEntity implements IGendered {
         return Text.of(getIdentity().getFullName());
     }
 
+    public void attack(LivingEntity target) {
+        if (this.world.isClient) return;
+
+        if (target == null) return;
+        if (target.isDead()) return;
+        if (!target.isAttackable()) return;
+
+        // is within cooldown?
+        if (!this.canAttackWithCooldown()) return;
+
+        // check if target wants to handle this attack
+        if (target.handleAttack(this)) return;
+
+        var damage = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        var enchantmentDamage = EnchantmentHelper.getAttackDamage(this.getMainHandStack(), target.getGroup());
+
+        final var cooldownProgress = 1;
+        enchantmentDamage *= cooldownProgress;
+        this.resetLastAttackedTicks();
+        if (damage > 0.0F || enchantmentDamage > 0.0F) {
+            var sprintKnockback = false;
+            var i = 0;
+            i += EnchantmentHelper.getKnockback(this);
+            if (this.isSprinting()) {
+                this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, this.getSoundCategory(), 1.0F, 1.0F);
+                ++i;
+                sprintKnockback = true;
+            }
+
+            var crit = this.fallDistance > 0.0F && !this.onGround && !this.isClimbing() && !this.isTouchingWater() && !this.hasStatusEffect(StatusEffects.BLINDNESS) && !this.hasVehicle();
+            crit = crit && !this.isSprinting();
+            if (crit) {
+                damage *= 1.5F;
+            }
+
+            damage += enchantmentDamage;
+            var sweep = false;
+            double speedDiff = this.horizontalSpeed - this.prevHorizontalSpeed;
+            if (!crit && !sprintKnockback && this.onGround && speedDiff < (double) this.getMovementSpeed()) {
+                var itemStack = this.getStackInHand(Hand.MAIN_HAND);
+                if (itemStack.getItem() instanceof SwordItem) {
+                    sweep = true;
+                }
+            }
+
+            var putOnFire = false;
+            var fireAspectLevel = EnchantmentHelper.getFireAspect(this);
+            var targetHealth = target.getHealth();
+            if (fireAspectLevel > 0 && !target.isOnFire()) {
+                putOnFire = true;
+                target.setOnFireFor(1);
+            }
+
+            var vec3d = target.getVelocity();
+            var damageAccepted = target.damage(DamageSource.mob(this), damage);
+            if (damageAccepted) {
+                if (i > 0) {
+                    target.takeKnockback((float) i * 0.5F, MathHelper.sin(this.getYaw() * (float) Math.PI / 180), -MathHelper.cos(this.getYaw() * (float) Math.PI / 180));
+
+                    this.setVelocity(this.getVelocity().multiply(0.6, 1.0, 0.6));
+                    this.setSprinting(false);
+                }
+
+                if (sweep) {
+                    var l = 1.0F + EnchantmentHelper.getSweepingMultiplier(this) * damage;
+                    var closeEntities = this.world.getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0, 0.25, 1.0));
+                    Iterator<LivingEntity> it = closeEntities.iterator();
+
+                    label166:
+                    while (true) {
+                        LivingEntity livingEntity;
+                        do {
+                            do {
+                                do {
+                                    do {
+                                        if (!it.hasNext()) {
+                                            this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, this.getSoundCategory(), 1.0F, 1.0F);
+                                            this.spawnSweepAttackParticles();
+                                            break label166;
+                                        }
+
+                                        livingEntity = it.next();
+                                    } while (livingEntity == this);
+                                } while (livingEntity == target);
+                            } while (this.isTeammate(livingEntity));
+                        } while (livingEntity instanceof ArmorStandEntity && ((ArmorStandEntity) livingEntity).isMarker());
+
+                        if (this.squaredDistanceTo(livingEntity) < 9.0) {
+                            livingEntity.takeKnockback(0.4, MathHelper.sin(this.getYaw() * (float) Math.PI / 180), -MathHelper.cos(this.getYaw() * (float) Math.PI / 180));
+                            livingEntity.damage(DamageSource.mob(this), l);
+                        }
+                    }
+                }
+
+                if (target instanceof ServerPlayerEntity && target.velocityModified) {
+                    ((ServerPlayerEntity) target).networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(target));
+                    target.velocityModified = false;
+                    target.setVelocity(vec3d);
+                }
+
+                if (crit) {
+                    this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, this.getSoundCategory(), 1.0F, 1.0F);
+                    this.addCritParticles(target);
+                }
+
+                if (!crit && !sweep) {
+                    this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, this.getSoundCategory(), 1.0F, 1.0F);
+                }
+
+                if (enchantmentDamage > 0.0F) {
+                    this.addEnchantedHitParticles(target);
+                }
+
+                this.onAttacking(target);
+                EnchantmentHelper.onUserDamaged(target, this);
+
+                EnchantmentHelper.onTargetDamaged(this, target);
+                var itemStack2 = this.getMainHandStack();
+
+                if (!this.world.isClient && !itemStack2.isEmpty()) {
+                    itemPostHit(itemStack2, target);
+                    if (itemStack2.isEmpty()) {
+                        this.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+                    }
+                }
+
+                var m = targetHealth - target.getHealth();
+                this.increaseStat(Stats.DAMAGE_DEALT, Math.round(m * 10.0F));
+                if (fireAspectLevel > 0) {
+                    target.setOnFireFor(fireAspectLevel * 4);
+                }
+
+                if (this.world instanceof ServerWorld && m > 2.0F) {
+                    var n = (int) ((double) m * 0.5);
+                    ((ServerWorld) this.world).spawnParticles(ParticleTypes.DAMAGE_INDICATOR, target.getX(), target.getBodyY(0.5), target.getZ(), n, 0.1, 0.0, 0.1, 0.2);
+                }
+
+                this.addExhaustion(0.1F);
+            } else {
+                this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, this.getSoundCategory(), 1.0F, 1.0F);
+                if (putOnFire) {
+                    target.extinguish();
+                }
+            }
+        }
+    }
+
+    public void addExhaustion(float exhaustion) {
+        if (!this.world.isClient) {
+            this.hungerManager.addExhaustion(exhaustion);
+        }
+    }
+
+    private void itemPostHit(ItemStack itemStack, LivingEntity entity) {
+        Item item = itemStack.getItem();
+        if (item.postHit(itemStack, entity, this)) {
+            this.incrementStat(Stats.USED.getOrCreateStat(item));
+        }
+    }
+
+
+    public void spawnSweepAttackParticles() {
+        double d = -MathHelper.sin(this.getYaw() * (float) Math.PI / 180);
+        double e = MathHelper.cos(this.getYaw() * (float) Math.PI / 180);
+        if (this.world instanceof ServerWorld) {
+            ((ServerWorld) this.world).spawnParticles(ParticleTypes.SWEEP_ATTACK, this.getX() + d, this.getBodyY(0.5), this.getZ() + e, 0, d, 0.0, e, 0.0);
+        }
+    }
+
+    public void addCritParticles(Entity target) {
+        ((ServerChunkManager) this.getWorld().getChunkManager()).sendToNearbyPlayers(this, new EntityAnimationS2CPacket(target, 4));
+    }
+
+    public void addEnchantedHitParticles(Entity target) {
+        ((ServerChunkManager) this.getWorld().getChunkManager()).sendToNearbyPlayers(this, new EntityAnimationS2CPacket(target, 5));
+    }
+
+    public void incrementStat(Stat<?> stat) {
+        this.increaseStat(stat, 1);
+    }
+
+    public void increaseStat(Identifier stat, int amount) {
+        this.increaseStat(Stats.CUSTOM.getOrCreateStat(stat), amount);
+    }
+
+    public void increaseStat(Stat<?> stat, int amount) {
+        this.statHandler.increaseStat(stat, amount);
+    }
+
+    public void resetLastAttackedTicks() {
+        this.lastAttackedTicks = 0;
+    }
+
+    private boolean canAttackWithCooldown() {
+        return this.getAttackCooldownProgress(0.5F) >= 1.0F;
+    }
+
+    public float getAttackCooldownProgress(float baseTime) {
+        return MathHelper.clamp(((float) this.lastAttackedTicks + baseTime) / this.getAttackCooldownProgressPerTick(), 0.0F, 1.0F);
+    }
+
+    public float getAttackCooldownProgressPerTick() {
+        return (float) (1.0 / this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED) * 20.0);
+    }
 }
