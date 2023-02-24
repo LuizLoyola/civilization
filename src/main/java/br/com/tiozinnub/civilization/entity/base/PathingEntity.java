@@ -23,6 +23,7 @@ public abstract class PathingEntity extends EntityBase {
     public boolean isPathfinderSlowTicking = false;
     private WalkPace nextTargetPace;
     private boolean nextTargetResetLook;
+    private BlockPos lastTargetPos;
 
     protected PathingEntity(EntityType<? extends EntityBase> entityType, World world) {
         super(entityType, world);
@@ -146,10 +147,16 @@ public abstract class PathingEntity extends EntityBase {
     }
 
     public void setMovementTarget(BlockPos pos, WalkPace pace, boolean resetLook, double minDistance) {
-        this.getPathfinderService().startPathfinder(getPos(), Vec3d.ofBottomCenter(pos), minDistance);
-        this.getPathFollower().finishPath();
-        this.nextTargetPace = pace;
-        this.nextTargetResetLook = resetLook;
+        if (!pos.equals(this.lastTargetPos)) {
+            this.lastTargetPos = pos;
+            this.getPathFollower().finishPath();
+            this.getPathfinderService().startPathfinder(getPos(), Vec3d.ofBottomCenter(pos), minDistance);
+            this.nextTargetPace = pace;
+            this.nextTargetResetLook = resetLook;
+        } else {
+            this.getPathFollower().pace = pace;
+            if (resetLook) this.getMovementControl().stopLook();
+        }
     }
 
     public void setMovementTarget(Entity target, WalkPace pace, boolean lookAtEntity, boolean resetLookWhenDone, double minDistance) {

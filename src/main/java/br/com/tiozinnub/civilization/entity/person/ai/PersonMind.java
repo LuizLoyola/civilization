@@ -25,9 +25,14 @@ public class PersonMind extends Serializable {
     }
 
     public void tick() {
-        if (this.currentAction == null) {
+        if (this.currentAction == null) return;
+
+        if (this.currentAction.canTick()) {
+            this.currentAction.tick();
         }
 
-//        this.currentAction.tick();
+        if (this.currentAction.isFinished()) {
+            this.currentAction = null;
+        }
     }
 }

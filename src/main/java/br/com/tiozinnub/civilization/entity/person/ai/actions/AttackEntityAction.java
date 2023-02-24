@@ -8,8 +8,9 @@ import net.minecraft.entity.LivingEntity;
 public class AttackEntityAction extends Action {
     private LivingEntity target;
 
-    public AttackEntityAction(PersonEntity person) {
+    public AttackEntityAction(PersonEntity person, LivingEntity target) {
         super(person);
+        this.target = target;
     }
 
     @Override
@@ -18,14 +19,14 @@ public class AttackEntityAction extends Action {
 
         if (this.target.isDead()) {
             this.target = null;
+            this.finish(true);
             return;
         }
 
         if (this.person.isInAttackRange(this.target)) {
-            this.person.getNavigation().stop();
             this.person.attack(this.target);
         } else {
-            this.person.setMovementTarget(this.target, WalkPace.RUN_JUMP, true, false, this.person.squaredAttackRange(this.target));
+            this.person.setMovementTarget(this.target, WalkPace.RUN_JUMP, true, false, this.person.squaredAttackRange(this.target) - 1d);
         }
 
     }

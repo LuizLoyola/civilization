@@ -25,6 +25,12 @@ public class PathfinderService {
     public void startPathfinder(Vec3d start, Vec3d end, double minDistance) {
         if (this.isFindingPath()) {
             if (this.pathfinder != null) {
+                // is the same exact path?
+
+                if (this.pathfinder.start.equals(start) && this.pathfinder.end.equals(end) && this.pathfinder.minDistance == minDistance) {
+                    return;
+                }
+
                 this.pathfinder.cancel();
             }
             this.pathfinder = null;
