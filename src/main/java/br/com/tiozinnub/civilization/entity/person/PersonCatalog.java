@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.core;
+package br.com.tiozinnub.civilization.entity.person;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;

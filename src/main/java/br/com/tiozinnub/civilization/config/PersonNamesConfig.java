@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.config;
 
-import br.com.tiozinnub.civilization.entity.property.Gender;
+import br.com.tiozinnub.civilization.entity.person.property.Gender;
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import me.shedaniel.autoconfig.annotation.ConfigEntry;

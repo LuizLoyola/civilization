@@ -1,8 +1,8 @@
 package br.com.tiozinnub.civilization.entity.person;
 
-import br.com.tiozinnub.civilization.entity.PathingEntity;
-import br.com.tiozinnub.civilization.entity.property.Gender;
-import br.com.tiozinnub.civilization.entity.property.IGendered;
+import br.com.tiozinnub.civilization.entity.base.PathingEntity;
+import br.com.tiozinnub.civilization.entity.person.property.Gender;
+import br.com.tiozinnub.civilization.entity.person.property.IGendered;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.*;
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
-import static br.com.tiozinnub.civilization.entity.property.Gender.byGender;
+import static br.com.tiozinnub.civilization.entity.person.property.Gender.byGender;
 
 public class PersonEntity extends PathingEntity implements IGendered {
 

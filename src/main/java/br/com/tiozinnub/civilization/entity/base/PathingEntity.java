@@ -1,10 +1,5 @@
-package br.com.tiozinnub.civilization.entity;
+package br.com.tiozinnub.civilization.entity.base;
 
-import br.com.tiozinnub.civilization.core.ai.movement.Step;
-import br.com.tiozinnub.civilization.core.ai.movement.WalkPace;
-import br.com.tiozinnub.civilization.core.ai.movement.pathing.Path;
-import br.com.tiozinnub.civilization.core.ai.movement.pathing.PathfinderService;
-import br.com.tiozinnub.civilization.core.ai.movement.pathing.WorldNodeViewer;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import br.com.tiozinnub.civilization.utils.helper.ParticleHelper;
 import net.minecraft.entity.EntityPose;
@@ -24,7 +19,7 @@ public abstract class PathingEntity extends EntityBase {
     private final PathFollower pathFollower;
     public boolean isPathfinderAutoTicking = true; // by default, pathfinder will tick automatically
     public boolean isPathfinderSlowTicking = false;
-    private boolean debug = false;
+    private final boolean debug = false;
     private WalkPace nextTargetPace;
     private boolean nextTargetResetLook;
 

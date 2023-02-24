@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.entity.property;
+package br.com.tiozinnub.civilization.entity.person.property;
 
 import br.com.tiozinnub.civilization.utils.helper.RandomHelper;
 import net.minecraft.util.StringIdentifiable;

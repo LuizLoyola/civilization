@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.item.debug;
 
-import br.com.tiozinnub.civilization.entity.PathingEntity;
+import br.com.tiozinnub.civilization.entity.base.PathingEntity;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;

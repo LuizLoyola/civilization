@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.mixin;
 
-import br.com.tiozinnub.civilization.core.PersonCatalog;
+import br.com.tiozinnub.civilization.entity.person.PersonCatalog;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;

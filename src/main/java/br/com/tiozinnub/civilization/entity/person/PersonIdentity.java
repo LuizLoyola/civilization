@@ -1,6 +1,7 @@
 package br.com.tiozinnub.civilization.entity.person;
 
-import br.com.tiozinnub.civilization.entity.property.Gender;
+import br.com.tiozinnub.civilization.entity.person.property.Gender;
+import br.com.tiozinnub.civilization.entity.person.property.Species;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.random.Random;

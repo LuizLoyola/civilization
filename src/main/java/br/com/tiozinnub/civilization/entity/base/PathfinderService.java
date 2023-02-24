@@ -1,6 +1,5 @@
-package br.com.tiozinnub.civilization.core.ai.movement.pathing;
+package br.com.tiozinnub.civilization.entity.base;
 
-import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 

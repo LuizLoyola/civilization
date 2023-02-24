@@ -1,6 +1,5 @@
-package br.com.tiozinnub.civilization.core.ai.movement.pathing;
+package br.com.tiozinnub.civilization.entity.base;
 
-import br.com.tiozinnub.civilization.core.ai.movement.Step;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import br.com.tiozinnub.civilization.utils.helper.PositionHelper;
 import net.minecraft.nbt.NbtCompound;

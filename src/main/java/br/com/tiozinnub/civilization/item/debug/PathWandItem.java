@@ -1,6 +1,6 @@
 package br.com.tiozinnub.civilization.item.debug;
 
-import br.com.tiozinnub.civilization.core.ai.movement.WalkPace;
+import br.com.tiozinnub.civilization.entity.base.WalkPace;
 import br.com.tiozinnub.civilization.entity.person.PersonEntity;
 import br.com.tiozinnub.civilization.ext.IServerWorldExt;
 import br.com.tiozinnub.civilization.item.ItemWithData;

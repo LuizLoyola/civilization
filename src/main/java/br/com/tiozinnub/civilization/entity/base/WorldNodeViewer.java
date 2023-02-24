@@ -1,7 +1,5 @@
-package br.com.tiozinnub.civilization.core.ai.movement.pathing;
+package br.com.tiozinnub.civilization.entity.base;
 
-import br.com.tiozinnub.civilization.core.ai.movement.Step;
-import br.com.tiozinnub.civilization.entity.PathingEntity;
 import br.com.tiozinnub.civilization.utils.helper.PositionHelper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.function.BooleanBiFunction;

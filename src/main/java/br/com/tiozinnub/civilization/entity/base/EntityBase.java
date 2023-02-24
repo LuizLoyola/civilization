@@ -1,6 +1,5 @@
-package br.com.tiozinnub.civilization.entity;
+package br.com.tiozinnub.civilization.entity.base;
 
-import br.com.tiozinnub.civilization.core.ai.movement.WalkPace;
 import br.com.tiozinnub.civilization.utils.Serializable;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;

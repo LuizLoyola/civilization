@@ -1,4 +1,4 @@
-package br.com.tiozinnub.civilization.core.ai.movement;
+package br.com.tiozinnub.civilization.entity.base;
 
 import net.minecraft.util.StringIdentifiable;
 
