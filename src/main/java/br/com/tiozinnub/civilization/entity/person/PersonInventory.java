@@ -27,8 +27,8 @@ public class PersonInventory extends Serializable implements Inventory {
     public static final int[] ARMOR_SLOTS = new int[]{FEET_SLOT, LEGS_SLOT, CHEST_SLOT, HEAD_SLOT};
     private final PersonEntity person;
     private final DefaultedList<ItemStack> inventory;
-    public int selectedSlot;
-    public int selectedOffhandSlot;
+    public int selectedSlot = 0;
+    public int selectedOffhandSlot = 1;
     private int changeCount;
 
     public PersonInventory(PersonEntity person) {
@@ -74,6 +74,7 @@ public class PersonInventory extends Serializable implements Inventory {
 
         var itemStack = this.inventory.get(slot);
         this.inventory.set(slot, ItemStack.EMPTY);
+        this.markDirty();
         return itemStack;
 
     }
@@ -81,6 +82,7 @@ public class PersonInventory extends Serializable implements Inventory {
     @Override
     public void setStack(int slot, ItemStack stack) {
         this.inventory.set(slot, stack);
+        this.markDirty();
     }
 
     @Override
@@ -96,6 +98,7 @@ public class PersonInventory extends Serializable implements Inventory {
     @Override
     public void clear() {
         this.inventory.clear();
+        this.markDirty();
     }
 
     public void tick() {
@@ -104,6 +107,7 @@ public class PersonInventory extends Serializable implements Inventory {
             if (itemStack.isEmpty()) continue;
             itemStack.inventoryTick(this.person.getWorld(), this.person, i, this.selectedSlot == i);
         }
+        this.markDirty();
     }
 
     public void dropAll() {
@@ -112,6 +116,7 @@ public class PersonInventory extends Serializable implements Inventory {
             if (itemStack.isEmpty()) continue;
             this.person.dropItem(itemStack, true, false);
             this.inventory.set(i, ItemStack.EMPTY);
+            this.markDirty();
         }
     }
 
@@ -141,6 +146,7 @@ public class PersonInventory extends Serializable implements Inventory {
             var itemNbt = nbt.getCompound(key);
             var itemStack = ItemStack.fromNbt(itemNbt);
             this.inventory.set(Integer.parseInt(key), itemStack);
+            this.markDirty();
         }
     }
 
@@ -252,6 +258,7 @@ public class PersonInventory extends Serializable implements Inventory {
 
                 if (slot >= 0) {
                     this.inventory.set(slot, stack.copy());
+                    this.markDirty();
                     this.inventory.get(slot).setBobbingAnimationTime(5);
                     stack.setCount(0);
                     return true;
@@ -288,5 +295,26 @@ public class PersonInventory extends Serializable implements Inventory {
         }
 
         return -1;
+    }
+
+    public NbtCompound getEquippedItemsAsNbt() {
+        var nbt = new NbtCompound();
+
+        nbt.put(EquipmentSlot.FEET.getName(), this.inventory.get(FEET_SLOT).writeNbt(new NbtCompound()));
+        nbt.put(EquipmentSlot.LEGS.getName(), this.inventory.get(LEGS_SLOT).writeNbt(new NbtCompound()));
+        nbt.put(EquipmentSlot.CHEST.getName(), this.inventory.get(CHEST_SLOT).writeNbt(new NbtCompound()));
+        nbt.put(EquipmentSlot.HEAD.getName(), this.inventory.get(HEAD_SLOT).writeNbt(new NbtCompound()));
+        nbt.put(EquipmentSlot.MAINHAND.getName(), this.inventory.get(this.selectedSlot).writeNbt(new NbtCompound()));
+        nbt.put(EquipmentSlot.OFFHAND.getName(), this.inventory.get(this.selectedOffhandSlot).writeNbt(new NbtCompound()));
+
+        return nbt;
+    }
+
+    public boolean isDirty() {
+        return this.changeCount > 0;
+    }
+
+    public void setClean() {
+        this.changeCount = 0;
     }
 }

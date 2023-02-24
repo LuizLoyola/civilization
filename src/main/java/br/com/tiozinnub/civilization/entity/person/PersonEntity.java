@@ -16,6 +16,7 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -35,18 +36,26 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     private static final TrackedData<NbtCompound> IDENTITY;
 
+    private static final TrackedData<NbtCompound> EQUIPPED_ITEMS;
+
     static {
         IDENTITY = DataTracker.registerData(PersonEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
-
+        EQUIPPED_ITEMS = DataTracker.registerData(PersonEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
     }
 
-    private final PersonInventory inventory = new PersonInventory(this);
+    private final PersonInventory inventory;
     private boolean registeredOnCatalog = false;
 
     public PersonEntity(EntityType<? extends PathingEntity> entityType, World world) {
         super(entityType, world);
 
         this.startTracking();
+
+        if (!this.isClient()) {
+            this.inventory = new PersonInventory(this);
+        } else {
+            this.inventory = null;
+        }
     }
 
     public static DefaultAttributeContainer.Builder createPersonAttributes() {
@@ -55,7 +64,11 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     @Override
     public ItemStack getEquippedStack(EquipmentSlot slot) {
-        return this.inventory.getStackAtEquipmentSlot(slot);
+        if (!this.isClient()) {
+            return this.inventory.getStackAtEquipmentSlot(slot);
+        }
+
+        return ItemStack.fromNbt(this.dataTracker.get(EQUIPPED_ITEMS).getCompound(slot.getName()));
     }
 
     @Override
@@ -85,7 +98,11 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     @Override
     public void tickMovement() {
-        this.inventory.tick();
+        if (!this.isClient()) {
+            this.inventory.tick();
+            this.dataTracker.set(EQUIPPED_ITEMS, this.inventory.getEquippedItemsAsNbt());
+            this.inventory.setClean();
+        }
 
         super.tickMovement();
     }
@@ -108,10 +125,14 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
         while (!itemStack.isEmpty()) {
             var added = this.inventory.insertStack(itemStack, allowArmor);
-            if (added) break;
+            if (added) {
+                this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_ITEM_PICKUP, this.getSoundCategory(), 0.2F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
+                break;
+            }
         }
 
         if (itemStack.isEmpty()) {
+            item.setPos(this.getX(), this.getY(), this.getZ());
             item.discard();
         }
     }
@@ -212,6 +233,7 @@ public class PersonEntity extends PathingEntity implements IGendered {
 
     private void startTracking() {
         this.dataTracker.startTracking(IDENTITY, new NbtCompound());
+        this.dataTracker.startTracking(EQUIPPED_ITEMS, new NbtCompound());
     }
 
     public PersonIdentity getIdentity() {
@@ -348,6 +370,7 @@ public class PersonEntity extends PathingEntity implements IGendered {
         super.writeCustomDataToNbt(nbt);
 
         nbt.put("identity", this.dataTracker.get(IDENTITY));
+
     }
 
     @Override

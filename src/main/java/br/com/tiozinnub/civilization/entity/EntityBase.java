@@ -249,7 +249,7 @@ public class EntityBase extends MerchantEntity implements GeoEntity {
 
             this.strafeTo(this.targetBlock);
 
-            if (this.targetBlock.getY() - getPos().getY() > getStepHeight() && getDistanceToTargetIgnoreY() < 1d) {
+            if (this.targetBlock.getY() - getPos().getY() > getStepHeight() && getDistanceToTargetIgnoreY() < 1.25d) {
                 this.jump();
             }
 
